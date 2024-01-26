@@ -4,3 +4,5 @@ urlpatterns = [
     path('accounts/', include('accounts.urls', namespace='accounts')),
     path('gameprocess/', include('gameprocess.urls', namespace='gameprocess')),
 ]
+
+app_name = 'apiv1'

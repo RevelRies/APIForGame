@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'apiv1.apps.Apiv1Config',
     'accounts.apps.AccountsConfig',
     'gameprocess.apps.GameprocessConfig',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
