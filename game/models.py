@@ -17,7 +17,7 @@ class UserProfile(models.Model):
 
 
 class Season(models.Model):
-    name = models.CharField(max_length=50, verbose_name='название сезона')
+    name = models.CharField(max_length=50, verbose_name='название сезона', blank=True)
     number = models.IntegerField(verbose_name='номер сезона')
     start_date = models.DateTimeField(verbose_name='время начала сезона')
     finish_date = models.DateTimeField(verbose_name='время окончания сезона')
@@ -42,5 +42,5 @@ class UserSeasonScore(models.Model):
         verbose_name_plural = 'Результаты за сезоны'
 
     def __str__(self):
-        return f"Результаты за сезон {self.user.username}"
+        return f"Результаты за сезон № {self.season.number} игрока {self.user.username}"
 
