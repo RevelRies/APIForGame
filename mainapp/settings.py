@@ -31,6 +31,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'game.apps.GameConfig',
     'apiv1.apps.Apiv1Config',
+    'accounts.apps.AccountsConfig',
+    'gameprocess.apps.GameprocessConfig',
 ]
 
 MIDDLEWARE = [
