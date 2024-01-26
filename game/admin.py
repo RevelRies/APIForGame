@@ -1,3 +1,7 @@
 from django.contrib import admin
 
-# Register your models here.
+from .models import UserSeasonScore, UserProfile, Season
+
+admin.site.register(UserProfile)
+admin.site.register(UserSeasonScore)
+admin.site.register(Season)
