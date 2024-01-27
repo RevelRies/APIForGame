@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'accounts.apps.AccountsConfig',
     'gameprocess.apps.GameprocessConfig',
     'rest_framework',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -121,3 +122,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Указываем Django на кастомную модель пользователя
 AUTH_USER_MODEL = 'game.User'
+
+# Настройки для DRF
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# Настройки для документирования API
+SPECTACULAR_SETTINGS = {
+    "TITLE": "API for Game",
+    "DESCRIPTION": "API for Game",
+    "VERSION": "1.0.0",
+}

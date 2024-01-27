@@ -6,6 +6,11 @@ from rest_framework.response import Response
 
 
 class SingUpView(APIView):
+    '''
+    Для регистрации пользователя в JSON нужно передать:
+    "password": "yourpassword"
+    "email": "youremail@google.com"
+    '''
     def post(self, request: Request):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
