@@ -1,14 +1,25 @@
-from django.contrib.auth.models import User
-from rest_framework import serializers
+import uuid
+
+from game.models import User
+from rest_framework.serializers import ModelSerializer
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(ModelSerializer):
     class Meta:
         model = User
-        fields = ['username', 'password', 'email']
+        fields = ['url', 'password', 'email']
 
-    # def validate(self, data):
-    #     email = data.get('email')
-    #     if User.objects.filter(email=email).exists():
-    #         raise serializers.ValidationError({"email": "This email is already taken."})
-    #     return data
+        # делаем пароль только для записи чтобы его нельзя было увидеть в ответе API
+        # extra_kwargs = {'password': {'write_only': True}}
+
+    def generate_username(self):
+        ''' Функция рандомно генерирует username для каждого нового пользователя '''
+        return uuid.uuid4()
+
+    def create(self, validated_data):
+        ''' Переопределяем метод create для того чтобы пароль сохранялся не в чистом виде, а закодированный '''
+        user = User(email=validated_data['email'],
+                    username=self.generate_username())
+        user.set_password(validated_data['password'])
+        user.save()
+        return user
