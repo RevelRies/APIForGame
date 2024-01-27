@@ -1,19 +1,70 @@
+import uuid
+
 from django.db import models
-from django.contrib.auth.models import User
+from django.core.validators import validate_email
+from django.contrib.auth.models import AbstractUser, UserManager
 
 
-class UserProfile(models.Model):
-    user = models.OneToOneField(to=User, on_delete=models.CASCADE)
+class CustomUserManager(UserManager):
+    '''
+    Переопределяем стандартный UserManager для того чтобы, сделать поле username не обязательным для ввода
+    Поле username будет генерироваться автоматически
+    '''
+
+    def _get_email(self, email: str):
+        ''' Функция проверяет email на правильность'''
+        validate_email(email)
+        return email
+
+    def _generate_username(self):
+        ''' Функция рандомно генерирует username для каждого нового пользователя '''
+        return uuid.uuid4()
+
+    def _create_user(self, email, password, commit, is_staff=False, is_superuser=False):
+        ''' Переопределение функции чтобы, убрать обязательный ввод username '''
+        email = self._get_email(email)
+        username = self._generate_username()
+        user = User(email=email, username=username, is_staff=is_staff, is_superuser=is_superuser)
+        user.set_password(password)
+
+        if commit:
+            user.save()
+
+        return user
+
+    def create_user(self, email, password, **extra_fields):
+        extra_fields.setdefault("is_staff", False)
+        extra_fields.setdefault("is_superuser", False)
+        extra_fields.setdefault("commit", True)
+        return self._create_user(email, password, **extra_fields)
+
+    def create_superuser(self, email, password, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("commit", True)
+
+        return self._create_user(email, password, **extra_fields)
+
+
+class User(AbstractUser):
+    email = models.EmailField(unique=True, verbose_name='логин пользователя')
     all_time_score = models.IntegerField(default=0, verbose_name='количество очков за все время')
     all_time_high_score = models.IntegerField(default=0, verbose_name='максимальный результат за все время')
     coins = models.IntegerField(default=0, verbose_name='количество монет у пользователя')
 
-    class Meta:
+    # строка необходима для использования CustomUserManager в запросах
+    objects = CustomUserManager()
+
+# обозначаем что в поле username теперь должен быть email
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
+    class Meta(AbstractUser.Meta):
         verbose_name = 'Профиль пользователя'
         verbose_name_plural = 'Профили пользователей'
 
     def __str__(self):
-        return f"Профиль пользователя {self.user.username}"
+        return f"Профиль пользователя {self.username}"
 
 
 class Season(models.Model):
