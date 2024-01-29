@@ -1,13 +1,8 @@
-from game.models import User
-
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
-from .serializers import UserSerializer, UserDataSerializer
+from .serializers import UserSerializer
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
 
 
 class SingUpView(APIView):
@@ -23,31 +18,6 @@ class SingUpView(APIView):
             serializer.save()
             return Response({'result': 'registration was successful'}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class UserDataView(APIView):
-    '''
-    Получение данных пользователя
-    '''
-
-    # указывает что ответ могут получить только авторизованные пользователи
-    permission_classes = (IsAuthenticated,)
-
-    def get(self, request: Request):
-        '''
-        Пробует получить из тела GET запроса поле email и найти пользователя с таким email.\n
-        Требуется передать в теле запроса:\n
-        {"email": "youremail@google.com"}\n
-        Для получения информации нужно передать в заголовке:\n
-        Authorization: Bearer "access token"
-        '''
-        try:
-            email = request.data['email']
-            user = User.objects.get(email=email)
-            serializer = UserDataSerializer(user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except:
-            return Response({"email": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
