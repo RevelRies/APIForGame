@@ -31,12 +31,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
     'game.apps.GameConfig',
     'apiv1.apps.Apiv1Config',
     'accounts.apps.AccountsConfig',
     'gameprocess.apps.GameprocessConfig',
+
     'rest_framework',
     'drf_spectacular',
+    'social_django',
 ]
 
 MIDDLEWARE = [
@@ -62,6 +65,9 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+
+                'social_django.context_processors.backends',
+                'social_django.context_processors.login_redirect',
             ],
         },
     },
@@ -124,6 +130,20 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Указываем Django на кастомную модель пользователя
 AUTH_USER_MODEL = 'game.User'
+
+# Сервера для OAuth 2.0 (social_django)
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.google.GoogleOAuth2',
+
+    'django.contrib.auth.backends.ModelBackend',
+)
+
+# данные для auth Google
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '620217638324-amnob29gv3c0dtfu2ieoeq95aljc4rbd.apps.googleusercontent.com'
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
+
+# указание пространства имен для social_django
+SOCIAL_AUTH_URL_NAMESPACE = 'apiv1:accounts:social'
 
 # Настройки для DRF
 REST_FRAMEWORK = {
