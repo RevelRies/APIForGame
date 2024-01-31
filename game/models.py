@@ -1,8 +1,12 @@
 import uuid
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 from django.db import models
 from django.core.validators import validate_email
 from django.contrib.auth.models import AbstractUser, UserManager
+
 
 
 class CustomUserManager(UserManager):
@@ -20,11 +24,20 @@ class CustomUserManager(UserManager):
         ''' Функция рандомно генерирует username для каждого нового пользователя '''
         return uuid.uuid4()
 
-    def _create_user(self, email, password, commit, is_staff=False, is_superuser=False):
+    def _create_user(self, email, password, username, commit, is_staff=False, is_superuser=False):
         ''' Переопределение функции чтобы, убрать обязательный ввод username '''
         email = self._get_email(email)
-        username = self._generate_username()
+
+        # # если пользователь входил через сторонние сервисы (Google или Apple), то ему устанавливается username указанный в его профиле сервиса
+        if not username:
+            username = self._generate_username()
+
         user = User(email=email, username=username, is_staff=is_staff, is_superuser=is_superuser)
+
+        # если пользователь входил через сторонние сервисы (Google или Apple), то ему устанавливается стандартный пароль
+        if not password:
+            password = os.getenv('DEFAULT_PASSWORD')
+
         user.set_password(password)
 
         if commit:
@@ -32,11 +45,11 @@ class CustomUserManager(UserManager):
 
         return user
 
-    def create_user(self, email, password, **extra_fields):
+    def create_user(self, email, password=None, username=None, **extra_fields):
         extra_fields.setdefault("is_staff", False)
         extra_fields.setdefault("is_superuser", False)
         extra_fields.setdefault("commit", True)
-        return self._create_user(email, password, **extra_fields)
+        return self._create_user(email, password, username, **extra_fields)
 
     def create_superuser(self, email, password, **extra_fields):
         extra_fields.setdefault("is_staff", True)

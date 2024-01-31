@@ -1,9 +1,10 @@
 from django.urls import path, re_path, include
-from .views import SingUpView
+from .views import SingUpView, GoogleAuthView
 
 urlpatterns = [
     path('singup/', SingUpView.as_view(), name='singup'),
-    re_path(r'^oauth/', include('social_django.urls', namespace='apiv1:accounts:social'))
+    path('oauth/complete/google-auth/', GoogleAuthView.as_view(), name='google-auth'),
+    path('oauth/', include('social_django.urls', namespace='apiv1:accounts:social'))
 ]
 
 app_name = 'accounts'

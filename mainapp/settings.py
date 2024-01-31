@@ -139,8 +139,11 @@ AUTHENTICATION_BACKENDS = (
 )
 
 # данные для auth Google
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '620217638324-amnob29gv3c0dtfu2ieoeq95aljc4rbd.apps.googleusercontent.com'
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '620217638324-2h1a454eqp56f95vm9p7rc5u2p5vqute.apps.googleusercontent.com'
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
+
+# модель в которую записываются данные пользователя авторизованного через сервисы
+SOCIAL_AUTH_USER_MODEL = 'game.User'
 
 # указание пространства имен для social_django
 SOCIAL_AUTH_URL_NAMESPACE = 'apiv1:accounts:social'

@@ -1,8 +1,11 @@
+from social_django.models import UserSocialAuth
+
 from .serializers import UserSerializer
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 
 class SingUpView(APIView):
@@ -20,7 +23,21 @@ class SingUpView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class GoogleAuthView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        # Получение данных Google профиля пользователя
+
+        # В данной строке происходит извлечение данных из Google и регистрация пользователя в нашей БД
+        user_social = UserSocialAuth.objects.get(user=request.user, provider='google-oauth2')
+
+        data = {
+            'username': request.user.username,
+            'email': user_social.extra_data['email'],
+            'google_id': user_social.uid,
+        }
+        return Response(data)
 
 
 
