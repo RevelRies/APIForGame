@@ -1,6 +1,8 @@
+from game.models import User
+
 from social_django.models import UserSocialAuth
 
-from .serializers import UserSerializer
+from .serializers import UserSerializer, ChangeUsernameSerializer
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.request import Request
@@ -40,4 +42,31 @@ class GoogleAuthView(APIView):
         return Response(data)
 
 
+class ChangeUsernameView(APIView):
+    '''
+    API для изменения username пользователя
+    '''
 
+    permission_classes = (IsAuthenticated,)
+
+    def put(self, request: Request):
+        # пробуем получить email из тела запроса
+        try:
+            request.data['email']
+        except:
+            return Response({"email": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        # пробуем найти пользователя с таким email
+        try:
+            instance = User.objects.get(email=request.data['email'])
+        except:
+            return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # передаем данные в сериалайзер где уже происходит изменение coins и сохранение в БД
+        serializer = ChangeUsernameSerializer(data=request.data, instance=instance)
+        if serializer.is_valid():
+            serializer.save()
+            result_data = {"result": "the user's username has been successfully changed"}
+            result_data.update(serializer.data)
+            return Response(result_data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

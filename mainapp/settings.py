@@ -139,8 +139,8 @@ AUTHENTICATION_BACKENDS = (
 )
 
 # данные для auth Google
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '620217638324-2h1a454eqp56f95vm9p7rc5u2p5vqute.apps.googleusercontent.com'
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET')
 
 # модель в которую записываются данные пользователя авторизованного через сервисы
 SOCIAL_AUTH_USER_MODEL = 'game.User'

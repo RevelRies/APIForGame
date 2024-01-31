@@ -3,3 +3,4 @@
 - поиск пользователя реализован по email. Нужно подумать над оптимизацией
 - проблема (JWT access токен работает для всех пользователей) https://www.phind.com/search?cache=hcie0bsdj6fd4xq2x5hcoakn
 - привести сериалайзеры к нормальному виду как в SaveCoinsView
+- более детально настроить библиотеку better_profanity

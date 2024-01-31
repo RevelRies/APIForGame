@@ -1,6 +1,11 @@
 import uuid
 
 from game.models import User
+
+from better_profanity import profanity
+profanity.load_censor_words_from_file(filename='./profanity_wordlist.txt')
+
+from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
 
@@ -23,5 +28,21 @@ class UserSerializer(ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
+
+
+class ChangeUsernameSerializer(ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username', 'email']
+
+
+    def update(self, instance, validated_data):
+
+        if profanity.contains_profanity(validated_data['username']):
+            raise serializers.ValidationError({"error": "Username contains profane words."})
+
+        instance.username = validated_data['username']
+        instance.save()
+        return instance
 
 
