@@ -1,5 +1,5 @@
 from .models import User
-from .serializers import UserDataSerializer, UserSaveCoinsSerializer
+from .serializers import UserDataSerializer, UserSaveCoinsSerializer, UserSaveScoreSerializer
 
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -34,7 +34,31 @@ class UserDataView(APIView):
 
 
 class SaveScoreView(APIView):
-    pass
+    '''
+    Изменение all_time_score, all_time_high_score и season_high_score для пользователя
+    '''
+    # указывает что запрос могут сделать только авторизованные пользователи
+    # permission_classes = (IsAuthenticated,)
+
+    def put(self, request: Request):
+
+        # пробуем получить email из тела запроса
+        try:
+            request.data['email']
+        except:
+            return Response({"email": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        # пробуем найти пользователя с таким email
+        try:
+            instance = User.objects.get(email=request.data['email'])
+        except:
+            return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = UserSaveScoreSerializer(data=request.data, instance=instance)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class SaveCoinsView(APIView):
@@ -63,7 +87,8 @@ class SaveCoinsView(APIView):
         serializer = UserSaveCoinsSerializer(data=request.data, instance=instance)
         if serializer.is_valid():
             serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
 

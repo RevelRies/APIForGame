@@ -21,6 +21,7 @@ def create_new_user_season_score(sender, instance, created, **kwargs):
     Функция создает UserSeasonScore для текущего сезона только что зарегистрировавшегося пользователя
     '''
 
+    # Выбирает идущий на данный момент сезон
     current_season = Season.objects.filter(
         start_date__lte=timezone.now(),
         finish_date__gte=timezone.now()

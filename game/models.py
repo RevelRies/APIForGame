@@ -61,6 +61,7 @@ class CustomUserManager(UserManager):
 
 class User(AbstractUser):
     email = models.EmailField(unique=True, verbose_name='логин пользователя')
+    score = models.IntegerField(default=0, verbose_name='текущие очки для сериализатора')
     all_time_score = models.IntegerField(default=0, verbose_name='количество очков за все время')
     all_time_high_score = models.IntegerField(default=0, verbose_name='максимальный результат за все время')
     coins = models.IntegerField(default=0, verbose_name='количество монет у пользователя')
