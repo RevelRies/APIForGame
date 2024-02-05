@@ -2,7 +2,8 @@ from .models import User, Season, UserSeasonScore
 from .serializers import (UserDataSerializer,
                           UserSaveCoinsSerializer,
                           UserSaveScoreSerializer,
-                          SeasonLeaderboardSerializer)
+                          SeasonLeaderboardSerializer,
+                          SeasonListSerializer)
 
 from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated
@@ -163,10 +164,13 @@ class SeasonLeaderboard(generics.ListAPIView):
     Получаем лидерборд сезона
     '''
 
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     serializer_class = SeasonLeaderboardSerializer
 
     def get_queryset(self):
+        '''
+        Переопределяю метод для проверки тела запроса и вывода UserSeasonScore для данного сезона
+        '''
         try:
             season_number = self.request.data['season_number']
         except:
@@ -179,3 +183,13 @@ class SeasonLeaderboard(generics.ListAPIView):
             return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
 
         return UserSeasonScore.objects.filter(season=season.id).order_by('-season_high_score', 'user__username')
+
+
+class SeasonList(generics.ListAPIView):
+    '''
+    Получаем список сезонов
+    '''
+
+    queryset = Season.objects.all().order_by('number')
+    serializer_class = SeasonListSerializer
+    # permission_classes = (IsAuthenticated,)

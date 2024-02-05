@@ -64,7 +64,10 @@ class SeasonLeaderboardSerializer(ModelSerializer):
         fields = ['user', 'season_high_score']
 
 
-
+class SeasonListSerializer(ModelSerializer):
+    class Meta:
+        model = Season
+        fields = '__all__'
 
 
 
