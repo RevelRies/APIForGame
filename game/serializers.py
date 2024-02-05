@@ -57,6 +57,11 @@ class UserSaveScoreSerializer(ModelSerializer):
         return instance
 
 
+class SeasonLeaderboardSerializer(ModelSerializer):
+    user = UserDataSerializer()
+    class Meta:
+        model = UserSeasonScore
+        fields = ['user', 'season_high_score']
 
 
 

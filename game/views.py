@@ -1,7 +1,10 @@
 from .models import User, Season, UserSeasonScore
-from .serializers import UserDataSerializer, UserSaveCoinsSerializer, UserSaveScoreSerializer
+from .serializers import (UserDataSerializer,
+                          UserSaveCoinsSerializer,
+                          UserSaveScoreSerializer,
+                          SeasonLeaderboardSerializer)
 
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.views import APIView
@@ -96,6 +99,8 @@ class UserLeaderboardPosition(APIView):
     Положение пользователя в лидерборде всех сезонов
     '''
 
+    # указывает что запрос могут сделать только авторизованные пользователи
+    # permission_classes = (IsAuthenticated,)
     def get_user_position(self, user: User, season: Season):
         '''
         Получаем позицию пользователя в сезоне в соответствии с его season_high_score
@@ -152,3 +157,25 @@ class UserLeaderboardPosition(APIView):
         except Exception as ex:
             return Response({"error": ex}, status=status.HTTP_409_CONFLICT)
 
+
+class SeasonLeaderboard(generics.ListAPIView):
+    '''
+    Получаем лидерборд сезона
+    '''
+
+    # permission_classes = (IsAuthenticated,)
+    serializer_class = SeasonLeaderboardSerializer
+
+    def get_queryset(self):
+        try:
+            season_number = self.request.data['season_number']
+        except:
+            return Response({"season_number": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        # пробуем найти пользователя с таким email
+        try:
+            season = Season.objects.get(number=season_number)
+        except:
+            return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return UserSeasonScore.objects.filter(season=season.id).order_by('-season_high_score', 'user__username')
