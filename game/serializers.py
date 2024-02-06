@@ -10,6 +10,7 @@ class UserDataSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = ['email', 'username', 'all_time_score', 'all_time_high_score', 'coins']
+        extra_kwargs = {'username': {'required': False}}
 
 
 class UserSaveCoinsSerializer(ModelSerializer):

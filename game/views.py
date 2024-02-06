@@ -1,4 +1,5 @@
 from .models import User, Season, UserSeasonScore
+from accounts.permissions import IsOwner
 from .serializers import (UserDataSerializer,
                           UserSaveCoinsSerializer,
                           UserSaveScoreSerializer,
@@ -12,13 +13,30 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 
+def get_instance(request, search_field):
+    # пробуем получить search_field из тела запроса
+    try:
+        request.data[search_field]
+    except:
+        return Response({search_field: ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+
+    # пробуем найти пользователя с таким search_field
+    try:
+        if search_field == 'email':
+            return User.objects.get(email=request.data[search_field])
+        elif search_field == 'season_number':
+            return Season.objects.get(number=request.data[search_field])
+    except:
+        return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+
 class UserDataView(APIView):
     '''
     Получение данных пользователя
     '''
 
     # указывает что ответ могут получить только авторизованные пользователи
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsOwner,)
 
     def get(self, request: Request):
         '''
@@ -28,13 +46,14 @@ class UserDataView(APIView):
         Для получения информации нужно передать в заголовке:\n
         Authorization: Bearer "access token"
         '''
-        try:
-            email = request.data['email']
-            user = User.objects.get(email=email)
-            serializer = UserDataSerializer(user)
+
+        user = get_instance(request, 'email')
+        serializer = UserDataSerializer(instance=user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        except:
-            return Response({"email": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 class SaveScoreView(APIView):
@@ -192,4 +211,4 @@ class SeasonList(generics.ListAPIView):
 
     queryset = Season.objects.all().order_by('number')
     serializer_class = SeasonListSerializer
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
