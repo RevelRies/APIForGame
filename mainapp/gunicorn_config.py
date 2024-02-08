@@ -1,4 +1,4 @@
-command = '/var/www/gameapi_01/env/bin/gunicorn'
+command = '/var/www/gameapi_01/APIForGame/env/bin/gunicorn'
 python_path = '/var/www/gameapi_01/APIForGame/mainapp'
 bind = '0.0.0.0:8001'
 workers = 5
