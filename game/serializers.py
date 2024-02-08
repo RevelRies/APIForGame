@@ -10,6 +10,7 @@ class UserDataSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = ['email', 'username', 'all_time_score', 'all_time_high_score', 'coins']
+        extra_kwargs = {'username': {'required': False}}
 
 
 class UserSaveCoinsSerializer(ModelSerializer):
@@ -57,9 +58,17 @@ class UserSaveScoreSerializer(ModelSerializer):
         return instance
 
 
+class SeasonLeaderboardSerializer(ModelSerializer):
+    user = UserDataSerializer()
+    class Meta:
+        model = UserSeasonScore
+        fields = ['user', 'season_high_score']
 
 
-
+class SeasonListSerializer(ModelSerializer):
+    class Meta:
+        model = Season
+        fields = '__all__'
 
 
 

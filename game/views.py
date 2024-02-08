@@ -1,11 +1,33 @@
 from .models import User, Season, UserSeasonScore
-from .serializers import UserDataSerializer, UserSaveCoinsSerializer, UserSaveScoreSerializer
+from accounts.permissions import IsOwner
+from .serializers import (UserDataSerializer,
+                          UserSaveCoinsSerializer,
+                          UserSaveScoreSerializer,
+                          SeasonLeaderboardSerializer,
+                          SeasonListSerializer)
 
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.views import APIView
 from rest_framework.response import Response
+
+
+def get_instance(request, search_field):
+    # пробуем получить search_field из тела запроса
+    try:
+        request.data[search_field]
+    except:
+        return Response({search_field: ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+
+    # пробуем найти пользователя с таким search_field
+    try:
+        if search_field == 'email':
+            return User.objects.get(email=request.data[search_field])
+        elif search_field == 'season_number':
+            return Season.objects.get(number=request.data[search_field])
+    except:
+        return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserDataView(APIView):
@@ -14,7 +36,7 @@ class UserDataView(APIView):
     '''
 
     # указывает что ответ могут получить только авторизованные пользователи
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsOwner,)
 
     def get(self, request: Request):
         '''
@@ -24,13 +46,14 @@ class UserDataView(APIView):
         Для получения информации нужно передать в заголовке:\n
         Authorization: Bearer "access token"
         '''
-        try:
-            email = request.data['email']
-            user = User.objects.get(email=email)
-            serializer = UserDataSerializer(user)
+
+        user = get_instance(request, 'email')
+        serializer = UserDataSerializer(instance=user, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        except:
-            return Response({"email": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 class SaveScoreView(APIView):
@@ -96,6 +119,8 @@ class UserLeaderboardPosition(APIView):
     Положение пользователя в лидерборде всех сезонов
     '''
 
+    # указывает что запрос могут сделать только авторизованные пользователи
+    # permission_classes = (IsAuthenticated,)
     def get_user_position(self, user: User, season: Season):
         '''
         Получаем позицию пользователя в сезоне в соответствии с его season_high_score
@@ -152,3 +177,38 @@ class UserLeaderboardPosition(APIView):
         except Exception as ex:
             return Response({"error": ex}, status=status.HTTP_409_CONFLICT)
 
+
+class SeasonLeaderboard(generics.ListAPIView):
+    '''
+    Получаем лидерборд сезона
+    '''
+
+    permission_classes = (IsAuthenticated,)
+    serializer_class = SeasonLeaderboardSerializer
+
+    def get_queryset(self):
+        '''
+        Переопределяю метод для проверки тела запроса и вывода UserSeasonScore для данного сезона
+        '''
+        try:
+            season_number = self.request.data['season_number']
+        except:
+            return Response({"season_number": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        # пробуем найти пользователя с таким email
+        try:
+            season = Season.objects.get(number=season_number)
+        except:
+            return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return UserSeasonScore.objects.filter(season=season.id).order_by('-season_high_score', 'user__username')
+
+
+class SeasonList(generics.ListAPIView):
+    '''
+    Получаем список сезонов
+    '''
+
+    queryset = Season.objects.all().order_by('number')
+    serializer_class = SeasonListSerializer
+    permission_classes = (IsAuthenticated,)

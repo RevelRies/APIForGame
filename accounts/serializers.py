@@ -3,10 +3,12 @@ import uuid
 from game.models import User
 
 from better_profanity import profanity
+
 profanity.load_censor_words_from_file(filename='./profanity_wordlist.txt')
 
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
+from rest_framework_simplejwt.serializers import TokenVerifySerializer
 
 
 class UserSerializer(ModelSerializer):
