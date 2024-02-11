@@ -32,21 +32,16 @@ def get_instance(request, search_field):
 
 class UserDataView(APIView):
     '''
-    Получение данных пользователя
+    Получение данных пользователя. Тело запроса:\n
+    {\n
+    "email": "youremail@mail.ru"\n
+    }\n
     '''
 
     # указывает что ответ могут получить только авторизованные пользователи
     permission_classes = (IsOwner,)
 
     def get(self, request: Request):
-        '''
-        Пробует получить из тела GET запроса поле email и найти пользователя с таким email.\n
-        Требуется передать в теле запроса:\n
-        {"email": "youremail@google.com"}\n
-        Для получения информации нужно передать в заголовке:\n
-        Authorization: Bearer "access token"
-        '''
-
         user = get_instance(request, 'email')
         serializer = UserDataSerializer(instance=user, data=request.data)
         if serializer.is_valid():
@@ -58,7 +53,11 @@ class UserDataView(APIView):
 
 class SaveScoreView(APIView):
     '''
-    Изменение all_time_score, all_time_high_score и season_high_score для пользователя
+    Изменение all_time_score, all_time_high_score и season_high_score для пользователя. Тело запроса:\n
+    {\n
+    "email": "youremail@mail.ru",\n
+    "score": "250"\n
+    }\n
     '''
     # указывает что запрос могут сделать только авторизованные пользователи
     permission_classes = (IsAuthenticated,)
@@ -86,7 +85,11 @@ class SaveScoreView(APIView):
 
 class SaveCoinsView(APIView):
     '''
-    Изменение coins пользователя
+    Изменение coins пользователя. Тело запроса:\n
+    {\n
+    "email": "youremail@mail.ru",\n
+    "coins": 15\n
+    }\n
     '''
 
     # указывает что запрос могут сделать только авторизованные пользователи
@@ -116,7 +119,10 @@ class SaveCoinsView(APIView):
 
 class UserLeaderboardPosition(APIView):
     '''
-    Положение пользователя в лидерборде всех сезонов
+    Положение пользователя в лидербордах всех сезонов. Тело запроса:\n
+    {\n
+    "email": "youremail@mail.ru",\n
+    }\n
     '''
 
     # указывает что запрос могут сделать только авторизованные пользователи
@@ -180,7 +186,10 @@ class UserLeaderboardPosition(APIView):
 
 class SeasonLeaderboard(generics.ListAPIView):
     '''
-    Получаем лидерборд сезона
+    Получаем лидерборд сезона. Тело запроса:\n
+    {\n
+    "season_number": 3,\n
+    }\n
     '''
 
     permission_classes = (IsAuthenticated,)
@@ -206,7 +215,8 @@ class SeasonLeaderboard(generics.ListAPIView):
 
 class SeasonList(generics.ListAPIView):
     '''
-    Получаем список сезонов
+    Получаем список сезонов. Тело запроса:\n
+    В тело запроса передавать ничего не требуется
     '''
 
     queryset = Season.objects.all().order_by('number')

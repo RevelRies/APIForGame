@@ -2,6 +2,9 @@ from game.models import User
 
 from social_django.models import UserSocialAuth
 
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+
 from .serializers import UserSerializer, ChangeUsernameSerializer
 from rest_framework import status
 from rest_framework.views import APIView
@@ -12,9 +15,11 @@ from rest_framework.permissions import IsAuthenticated
 
 class SingUpView(APIView):
     '''
-    Для регистрации пользователя в теле запроса нужно передать:\n
-    {"email": "youremail@google.com"}\n
-    {"password": "yourpassword"}\n
+    Регистрация пользователя. Тело запроса:\n
+    {\n
+    "email": "youremail@mail.ru",\n
+    "password": "yourpassword"\n
+    }\n
     При успешной регистрации вернется {"result": "Пользователь зарегистрирован"}
     '''
     def post(self, request: Request):
@@ -44,13 +49,27 @@ class GoogleAuthView(APIView):
 
 class ChangeUsernameView(APIView):
     '''
-    API для изменения username пользователя
+    Изменение username пользователя. Тело запроса:\n
+    Параметры тела запроса\n
+    {\n
+    "email": "youremail@mail.ru",\n
+    "username": "ayzo5"\n
+    }
     '''
 
     permission_classes = (IsAuthenticated,)
 
+    @swagger_auto_schema(manual_parameters=[
+        openapi.Parameter(
+            'email', openapi.IN_BODY,
+            description="the email of the user for whom you want to change the username",
+            type=openapi.TYPE_STRING,
+            required=True
+        )
+    ]
+    )
     def put(self, request: Request):
-        # пробуем получить email из тела запроса
+
         try:
             request.data['email']
         except:
