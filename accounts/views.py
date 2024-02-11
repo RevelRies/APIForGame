@@ -2,8 +2,8 @@ from game.models import User
 
 from social_django.models import UserSocialAuth
 
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiResponse
 
 from .serializers import UserSerializer, ChangeUsernameSerializer
 from rest_framework import status
@@ -22,6 +22,49 @@ class SingUpView(APIView):
     }\n
     При успешной регистрации вернется {"result": "Пользователь зарегистрирован"}
     '''
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('Request body',
+                             OpenApiTypes.OBJECT,
+                             examples=[
+                                 OpenApiExample(
+                                     'Пример запроса',
+                                     value={
+                                         "email": "youremail@mail.ru",
+                                         "password": "yourpassword"
+                                     }
+                                 )
+                             ]
+                             ),
+        ],
+        summary='Регистрация пользователя',
+        description='Регистрация нового пользователя в системе',
+        responses={
+            200: OpenApiResponse(
+                'Информация об объекте',
+                examples=[
+                    OpenApiExample(
+                        'Успешная регистрация',
+                        value={
+                            "result": "registration was successful"
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                'Информация об объекте',
+                examples=[
+                    OpenApiExample(
+                        'Ошибка',
+                        value={
+                            "email": "Пользователь с таким email уже зарегистрирован"
+                        }
+                    )
+                ]
+            ),
+        },
+    )
     def post(self, request: Request):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
@@ -59,14 +102,49 @@ class ChangeUsernameView(APIView):
 
     permission_classes = (IsAuthenticated,)
 
-    @swagger_auto_schema(manual_parameters=[
-        openapi.Parameter(
-            'email', openapi.IN_BODY,
-            description="the email of the user for whom you want to change the username",
-            type=openapi.TYPE_STRING,
-            required=True
-        )
-    ]
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('Request body',
+                             OpenApiTypes.OBJECT,
+                             examples=[
+                                 OpenApiExample(
+                                     'Пример запроса',
+                                     value={
+                                         "email": "youremail@mail.ru",
+                                         "username": "новый_username"
+                                     }
+                                 )
+                             ]
+                             ),
+        ],
+        summary='Изменение username',
+        description='Проверяет и затем изменяет username пользователя',
+        responses={
+            200: OpenApiResponse(
+                'Информация об объекте',
+                examples=[
+                    OpenApiExample(
+                        'Username изменен',
+                        value={
+                            "result": "the user's username has been successfully changed",
+                            "username": "новый username пользователя",
+                            "email": "ayzikov2@mail.ru"
+                        }
+                    )
+                ]
+            ),
+            400: OpenApiResponse(
+                'Информация об объекте',
+                examples=[
+                    OpenApiExample(
+                        'Ошибка',
+                        value={
+                            "username": "A user with that username already exists."
+                        }
+                    )
+                ]
+            ),
+        },
     )
     def put(self, request: Request):
 

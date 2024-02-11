@@ -6,6 +6,9 @@ from .serializers import (UserDataSerializer,
                           SeasonLeaderboardSerializer,
                           SeasonListSerializer)
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiResponse
+
 from rest_framework import status, generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
@@ -39,8 +42,43 @@ class UserDataView(APIView):
     '''
 
     # указывает что ответ могут получить только авторизованные пользователи
-    permission_classes = (IsOwner,)
+    permission_classes = (IsAuthenticated,)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('Request body',
+                             OpenApiTypes.OBJECT,
+                             OpenApiParameter.QUERY,
+                             examples=[
+                                 OpenApiExample(
+                                     'Пример запроса',
+                                     value={
+                                         "email": "youremail@mail.ru",
+                                     }
+                                 )
+                             ]
+                             ),
+        ],
+        summary='Данные пользователя',
+        description='Возвращает все данные пользователя',
+        responses={
+            200: OpenApiResponse(
+                'Информация об объекте',
+                examples=[
+                    OpenApiExample(
+                        'Успешно',
+                        value={
+                            "email": "ayzikov1@gmail.com",
+                            "username": "ayzo3",
+                            "all_time_score": 0,
+                            "all_time_high_score": 0,
+                            "coins": 0
+                        }
+                    )
+                ]
+            ),
+        },
+    )
     def get(self, request: Request):
         user = get_instance(request, 'email')
         serializer = UserDataSerializer(instance=user, data=request.data)
@@ -62,6 +100,38 @@ class SaveScoreView(APIView):
     # указывает что запрос могут сделать только авторизованные пользователи
     permission_classes = (IsAuthenticated,)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('Request body',
+                             OpenApiTypes.OBJECT,
+                             examples=[
+                                 OpenApiExample(
+                                     'Пример запроса',
+                                     value={
+                                         "email": "youremail@mail.ru",
+                                         "score": 250
+                                     }
+                                 )
+                             ]
+                             ),
+        ],
+        summary='Изменение score',
+        description='Изменение all_time_score, all_time_high_score и season_high_score для пользователя',
+        responses={
+            200: OpenApiResponse(
+                'Информация об объекте',
+                examples=[
+                    OpenApiExample(
+                        'Score изменен',
+                        value={
+                            "email": "ayzikov1@mail.ru",
+                            "score": "добавленные очки"
+                        }
+                    )
+                ]
+            ),
+        },
+    )
     def put(self, request: Request):
 
         # пробуем получить email из тела запроса
@@ -95,6 +165,38 @@ class SaveCoinsView(APIView):
     # указывает что запрос могут сделать только авторизованные пользователи
     permission_classes = (IsAuthenticated,)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('Request body',
+                             OpenApiTypes.OBJECT,
+                             examples=[
+                                 OpenApiExample(
+                                     'Пример запроса',
+                                     value={
+                                         "email": "youremail@mail.ru",
+                                         "coins": 250
+                                     }
+                                 )
+                             ]
+                             ),
+        ],
+        summary='Изменение coins',
+        description='Изменение coins для пользователя',
+        responses={
+            200: OpenApiResponse(
+                'Информация об объекте',
+                examples=[
+                    OpenApiExample(
+                        'Coins изменены',
+                        value={
+                            "email": "ayzikov1@mail.ru",
+                            "coins": "Количество coins пользователя после изменения"
+                        }
+                    )
+                ]
+            ),
+        },
+    )
     def put(self, request: Request):
 
         # пробуем получить email из тела запроса
@@ -126,7 +228,8 @@ class UserLeaderboardPosition(APIView):
     '''
 
     # указывает что запрос могут сделать только авторизованные пользователи
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
+
     def get_user_position(self, user: User, season: Season):
         '''
         Получаем позицию пользователя в сезоне в соответствии с его season_high_score
@@ -153,7 +256,50 @@ class UserLeaderboardPosition(APIView):
             if user_season_score['user_id'] == user.id:
                 return user_position
 
-
+    @extend_schema(
+        parameters=[
+            OpenApiParameter('Request body',
+                             OpenApiTypes.OBJECT,
+                             examples=[
+                                 OpenApiExample(
+                                     'Пример запроса',
+                                     value={
+                                         "email": "youremail@mail.ru",
+                                     }
+                                 )
+                             ]
+                             ),
+        ],
+        summary='Лидерборд пользователя',
+        description='Положение пользователя в лидербордах всех сезонов',
+        responses={
+            200: OpenApiResponse(
+                'Информация об объекте',
+                examples=[
+                    OpenApiExample(
+                        'Успешный успех',
+                        value={
+                            "season_1": {
+                                "season_name": "название сезона",
+                                "season_number": "номер сезона",
+                                "user_position": "место пользователя в этом сезоне"
+                            },
+                            "season_2": {
+                                "season_name": "testseason2",
+                                "season_number": 2,
+                                "user_position": 4
+                            },
+                            "season_3": {
+                                "season_name": "testseason3",
+                                "season_number": 3,
+                                "user_position": 5
+                            }
+                        }
+                    )
+                ]
+            ),
+        },
+    )
     def get(self, request: Request):
         # пробуем получить email из тела запроса
         try:
