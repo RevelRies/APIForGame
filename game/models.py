@@ -56,7 +56,7 @@ class CustomUserManager(UserManager):
         extra_fields.setdefault("is_superuser", True)
         extra_fields.setdefault("commit", True)
 
-        return self._create_user(email, password, **extra_fields)
+        return self._create_user(email, password, username=None, **extra_fields)
 
 
 class User(AbstractUser):
