@@ -1,5 +1,4 @@
 from .models import User, Season, UserSeasonScore
-from accounts.permissions import IsOwner
 from .serializers import (UserDataSerializer,
                           UserSaveCoinsSerializer,
                           UserSaveScoreSerializer,
@@ -7,9 +6,14 @@ from .serializers import (UserDataSerializer,
                           SeasonListSerializer)
 
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiResponse
+from drf_spectacular.utils import (extend_schema,
+                                   extend_schema_view,
+                                   OpenApiParameter,
+                                   OpenApiExample,
+                                   OpenApiResponse,
+                                   inline_serializer)
 
-from rest_framework import status, generics
+from rest_framework import status, generics, serializers
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.views import APIView
@@ -101,20 +105,13 @@ class SaveScoreView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(
-        parameters=[
-            OpenApiParameter('Request body',
-                             OpenApiTypes.OBJECT,
-                             examples=[
-                                 OpenApiExample(
-                                     'Пример запроса',
-                                     value={
-                                         "email": "youremail@mail.ru",
-                                         "score": 250
-                                     }
-                                 )
-                             ]
-                             ),
-        ],
+        request=inline_serializer(
+            name="SaveScoreDocSerializer",
+            fields={
+                "email": serializers.CharField(default='testemail_01@mail.ru'),
+                "score": serializers.IntegerField(default=100),
+            },
+        ),
         summary='Изменение score',
         description='Изменение all_time_score, all_time_high_score и season_high_score для пользователя',
         responses={
@@ -166,20 +163,13 @@ class SaveCoinsView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(
-        parameters=[
-            OpenApiParameter('Request body',
-                             OpenApiTypes.OBJECT,
-                             examples=[
-                                 OpenApiExample(
-                                     'Пример запроса',
-                                     value={
-                                         "email": "youremail@mail.ru",
-                                         "coins": 250
-                                     }
-                                 )
-                             ]
-                             ),
-        ],
+        request=inline_serializer(
+            name="SaveCoinsDocSerializer",
+            fields={
+                "email": serializers.CharField(default='testemail_01@mail.ru'),
+                "coins": serializers.IntegerField(default=100),
+            },
+        ),
         summary='Изменение coins',
         description='Изменение coins для пользователя',
         responses={
@@ -330,6 +320,25 @@ class UserLeaderboardPosition(APIView):
             return Response({"error": ex}, status=status.HTTP_409_CONFLICT)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        parameters=[
+            OpenApiParameter('Request body',
+                             OpenApiTypes.OBJECT,
+                             examples=[
+                                 OpenApiExample(
+                                     'Пример запроса',
+                                     value={
+                                         "season_number": 3,
+                                     }
+                                 )
+                             ]
+                             ),
+        ],
+        summary='Лидерборд сезона',
+        description='Лидерборд сезона',
+    )
+)
 class SeasonLeaderboard(generics.ListAPIView):
     '''
     Получаем лидерборд сезона. Тело запроса:\n
@@ -359,6 +368,23 @@ class SeasonLeaderboard(generics.ListAPIView):
         return UserSeasonScore.objects.filter(season=season.id).order_by('-season_high_score', 'user__username')
 
 
+@extend_schema_view(
+    get=extend_schema(
+        parameters=[
+            OpenApiParameter('Request body',
+                             OpenApiTypes.OBJECT,
+                             examples=[
+                                 OpenApiExample(
+                                     'Пример запроса',
+                                     value={}
+                                 )
+                             ]
+                             ),
+        ],
+        summary='Список всех сезонов',
+        description='Список сезонов',
+    )
+)
 class SeasonList(generics.ListAPIView):
     '''
     Получаем список сезонов. Тело запроса:\n

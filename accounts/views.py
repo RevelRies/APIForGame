@@ -2,11 +2,10 @@ from game.models import User
 
 from social_django.models import UserSocialAuth
 
-from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample, OpenApiResponse
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiResponse, inline_serializer
 
 from .serializers import UserSerializer, ChangeUsernameSerializer
-from rest_framework import status
+from rest_framework import status, serializers
 from rest_framework.views import APIView
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -24,20 +23,13 @@ class SingUpView(APIView):
     '''
 
     @extend_schema(
-        parameters=[
-            OpenApiParameter('Request body',
-                             OpenApiTypes.OBJECT,
-                             examples=[
-                                 OpenApiExample(
-                                     'Пример запроса',
-                                     value={
-                                         "email": "youremail@mail.ru",
-                                         "password": "yourpassword"
-                                     }
-                                 )
-                             ]
-                             ),
-        ],
+        request=inline_serializer(
+            name="SingUpDocSerializer",
+            fields={
+                "email": serializers.CharField(default='testemail_01@mail.ru'),
+                "password": serializers.CharField(default='qwerty12345'),
+            },
+        ),
         summary='Регистрация пользователя',
         description='Регистрация нового пользователя в системе',
         responses={
@@ -103,20 +95,13 @@ class ChangeUsernameView(APIView):
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(
-        parameters=[
-            OpenApiParameter('Request body',
-                             OpenApiTypes.OBJECT,
-                             examples=[
-                                 OpenApiExample(
-                                     'Пример запроса',
-                                     value={
-                                         "email": "youremail@mail.ru",
-                                         "username": "новый_username"
-                                     }
-                                 )
-                             ]
-                             ),
-        ],
+        request=inline_serializer(
+            name="ChangeUsernameDocSerializer",
+            fields={
+                "email": serializers.CharField(default='testemail_01@mail.ru'),
+                "username": serializers.CharField(default='test_username'),
+            },
+        ),
         summary='Изменение username',
         description='Проверяет и затем изменяет username пользователя',
         responses={
