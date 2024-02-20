@@ -47,9 +47,8 @@ class UserSaveScoreSerializer(ModelSerializer):
         if all_time_high_score < score:
             instance.all_time_high_score = score
 
-        # обновление максимального результата пользователя за текущий сезон
-        if user_season_score.season_high_score < score:
-            user_season_score.season_high_score = score
+        # обновление суммарного результата пользователя за текущий сезон
+        user_season_score.season_high_score += score
 
         # сохраняем User и UserSeasonScore после изменений
         instance.save()
