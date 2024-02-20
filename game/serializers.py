@@ -7,10 +7,15 @@ from rest_framework.serializers import ModelSerializer, Serializer
 
 
 class UserDataSerializer(ModelSerializer):
+    season_high_score = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ['email', 'username', 'all_time_score', 'all_time_high_score', 'coins']
+        fields = ['email', 'username', 'all_time_score', 'all_time_high_score', 'season_high_score', 'coins', 'deaths', 'obstacle_collisions']
         extra_kwargs = {'username': {'required': False}}
+
+    def get_season_high_score(self, user):
+        user_season_score = UserSeasonScore.objects.filter(user=user).last()
+        return user_season_score.season_high_score
 
 
 class UserSaveCoinsSerializer(ModelSerializer):
@@ -61,7 +66,7 @@ class SeasonLeaderboardSerializer(ModelSerializer):
     user = UserDataSerializer()
     class Meta:
         model = UserSeasonScore
-        fields = ['user', 'season_high_score']
+        fields = ['user']
 
 
 class SeasonListSerializer(ModelSerializer):

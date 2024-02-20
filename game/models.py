@@ -65,6 +65,8 @@ class User(AbstractUser):
     all_time_score = models.IntegerField(default=0, verbose_name='количество очков за все время')
     all_time_high_score = models.IntegerField(default=0, verbose_name='максимальный результат за все время')
     coins = models.IntegerField(default=0, verbose_name='количество монет у пользователя')
+    deaths = models.IntegerField(default=0, verbose_name='количества смертей пользователя')
+    obstacle_collisions = models.IntegerField(default=0, verbose_name='количества столкновений пользователя')
 
     # строка необходима для использования CustomUserManager в запросах
     objects = CustomUserManager()
