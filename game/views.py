@@ -20,22 +20,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 
-def get_instance(request, search_field):
-    # пробуем получить search_field из тела запроса
-    try:
-        request.data[search_field]
-    except:
-        return Response({search_field: ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
-
-    # пробуем найти пользователя с таким search_field
-    try:
-        if search_field == 'email':
-            return User.objects.get(email=request.data[search_field])
-        elif search_field == 'season_number':
-            return Season.objects.get(number=request.data[search_field])
-    except:
-        return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
-
 def get_user_position(user: User, season: Season):
     '''
     Получаем позицию пользователя в сезоне в соответствии с его season_high_score
@@ -108,8 +92,20 @@ class UserDataView(APIView):
         },
     )
     def get(self, request: Request):
-        user = get_instance(request, 'email')
-        serializer = UserDataSerializer(instance=user, data=request.data)
+
+        # пробуем получить email из тела запроса
+        try:
+            request.data['email']
+        except:
+            return Response({"email": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        # пробуем найти пользователя с таким email
+        try:
+            instance = User.objects.get(email=request.data['email'])
+        except:
+            return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = UserDataSerializer(instance=instance, data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -289,6 +285,7 @@ class UserLeaderboardPosition(APIView):
         },
     )
     def get(self, request: Request):
+
         # пробуем получить email из тела запроса
         try:
             request.data['email']
@@ -300,7 +297,6 @@ class UserLeaderboardPosition(APIView):
             instance = User.objects.get(email=request.data['email'])
         except:
             return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
-
 
         try:
             # создаем dict в которм ключи будут "season_(номер сезона), а значения dict с данными пользователя в этом сезоне"

@@ -3,12 +3,30 @@ import uuid
 from game.models import User
 
 from better_profanity import profanity
+from rest_framework.exceptions import APIException
 
 profanity.load_censor_words_from_file(filename='./profanity_wordlist.txt')
 
-from rest_framework import serializers
+from rest_framework import serializers, status
 from rest_framework.serializers import ModelSerializer
 from rest_framework_simplejwt.serializers import TokenVerifySerializer
+
+from django.contrib.auth import password_validation
+
+
+
+class CustomValidation(APIException):
+    ''' Кастомный обработчик ошибок сериализатора '''
+    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+    default_detail = 'A server error occurred.'
+
+    def __init__(self, detail, field, status_code):
+        if status_code is not None:
+            self.status_code = status_code
+        if detail is not None:
+            self.detail = {field: detail}
+        else:
+            self.detail = {'detail': self.default_detail}
 
 
 class UserSerializer(ModelSerializer):
@@ -25,6 +43,13 @@ class UserSerializer(ModelSerializer):
         ''' Переопределяем метод create для того чтобы пароль сохранялся не в чистом виде, а закодированный '''
         user = User(email=validated_data['email'],
                     username=self.generate_username())
+
+        # Проверяем пароль на валидность
+        try:
+            password_validation.validate_password(validated_data['password'])
+        except Exception as ex:
+            raise CustomValidation(ex, 'password', None)
+
         user.set_password(validated_data['password'])
         user.save()
         return user
