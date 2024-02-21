@@ -10,7 +10,7 @@ class UserDataSerializer(ModelSerializer):
     season_high_score = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ['email', 'username', 'all_time_score', 'all_time_high_score', 'season_high_score', 'coins', 'deaths', 'obstacle_collisions']
+        fields = ['email', 'username', 'all_time_score', 'all_time_high_score', 'season_high_score', 'coins', 'deaths', 'obstacle_collisions', 'boosters']
         extra_kwargs = {'username': {'required': False}}
 
     def get_season_high_score(self, user):
@@ -18,28 +18,39 @@ class UserDataSerializer(ModelSerializer):
         return user_season_score.season_high_score
 
 
-class UserSaveCoinsSerializer(ModelSerializer):
+class SaveUserDataSerializer(ModelSerializer):
+    season_high_score = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ['email', 'coins']
+        fields = ['email', 'username', 'score', 'all_time_score', 'all_time_high_score', 'season_high_score', 'coins', 'deaths', 'obstacle_collisions', 'boosters']
+        extra_kwargs = {'username': {'required': False}}
+
+    def get_season_high_score(self, user):
+        user_season_score = UserSeasonScore.objects.filter(user=user).last()
+        return user_season_score.season_high_score
+
+    def to_representation(self, obj):
+        ''' Переопределение функции для исключения из вывода поля score '''
+        ret = super().to_representation(obj)
+        ret.pop('score')
+        return ret
 
     def update(self, instance, validated_data):
-        # instanse - это объект User
+        # изменяем coins
         instance.coins += validated_data['coins']
-        instance.save()
-        return instance
+        # изменяем deaths
+        instance.deaths += validated_data['deaths']
+        # изменяем obstacle_collisions
+        instance.obstacle_collisions += validated_data['obstacle_collisions']
+        # изменяем boosters
+        if validated_data['boosters'] != {}:
+            instance.boosters = validated_data['boosters']
 
-
-class UserSaveScoreSerializer(ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['email', 'score']
-
-    def update(self, instance, validated_data):
-        # score который передал фронт в запросе
+        # изменяем score
         score = validated_data['score']
         instance.score = score
 
+        # поиск в БД текущего сезона
         all_time_high_score = instance.all_time_high_score
         now = timezone.now()
         current_season = Season.objects.get(start_date__lte=now, finish_date__gte=now)

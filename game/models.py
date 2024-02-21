@@ -1,5 +1,7 @@
 import uuid
 import os
+
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -67,6 +69,7 @@ class User(AbstractUser):
     coins = models.IntegerField(default=0, verbose_name='количество монет у пользователя')
     deaths = models.IntegerField(default=0, verbose_name='количества смертей пользователя')
     obstacle_collisions = models.IntegerField(default=0, verbose_name='количества столкновений пользователя')
+    boosters = models.JSONField(default=dict(), verbose_name='бустеры пользователя', blank=True)
 
     # строка необходима для использования CustomUserManager в запросах
     objects = CustomUserManager()
@@ -102,7 +105,7 @@ class UserSeasonScore(models.Model):
     # related_name позволяет назначать имя атрибуту, который используется для связи от ассоциированного объекта назад к нему.
     user = models.ForeignKey(to=User, on_delete=models.CASCADE, related_name='user_score')
     season = models.ForeignKey(to=Season, on_delete=models.CASCADE, related_name='season_score')
-    season_high_score = models.IntegerField(default=0, verbose_name='максимальный результат пользователя в сезоне')
+    season_high_score = models.IntegerField(default=0, verbose_name='сумма очков пользователя в сезоне')
 
     class Meta:
         verbose_name = 'Результат за сезон'

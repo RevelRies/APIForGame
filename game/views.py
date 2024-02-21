@@ -1,7 +1,6 @@
 from .models import User, Season, UserSeasonScore
 from .serializers import (UserDataSerializer,
-                          UserSaveCoinsSerializer,
-                          UserSaveScoreSerializer,
+                          SaveUserDataSerializer,
                           SeasonLeaderboardSerializer,
                           SeasonListSerializer)
 
@@ -112,28 +111,36 @@ class UserDataView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-class SaveScoreView(APIView):
+class SaveUserDataView(APIView):
     '''
-    Изменение all_time_score, all_time_high_score и season_high_score для пользователя. Тело запроса:\n
+    Изменение всех игровых полей пользователя. Тело запроса:\n
     {\n
     "email": "youremail@mail.ru",\n
-    "score": "250"\n
+    "score": 250,\n
+    "coins": 10,\n
+    "deaths": 2,\n
+    "obstacle_collisions": 6,\n
+    "boosters": {}\n
     }\n
     '''
+
     # указывает что запрос могут сделать только авторизованные пользователи
     permission_classes = (IsAuthenticated,)
 
     @extend_schema(
         request=inline_serializer(
-            name="SaveScoreDocSerializer",
+            name="SaveUserDataDocSerializer",
             fields={
                 "email": serializers.CharField(default='testemail_01@mail.ru'),
                 "score": serializers.IntegerField(default=100),
+                "coins": serializers.IntegerField(default=20),
+                "deaths": serializers.IntegerField(default=1),
+                "obstacle_collisions": serializers.IntegerField(default=5),
+                "boosters": serializers.JSONField(default=dict()),
             },
         ),
-        summary='Изменение score',
-        description='Изменение all_time_score, all_time_high_score и season_high_score для пользователя',
+        summary='Изменение игровых данных пользователя',
+        description='Изменение all_time_score, all_time_high_score и season_high_score, coins, deaths, obstacle_collisions и boosters пользователя',
         responses={
             200: OpenApiResponse(
                 'Информация об объекте',
@@ -142,7 +149,7 @@ class SaveScoreView(APIView):
                         'Score изменен',
                         value={
                             "email": "ayzikov1@mail.ru",
-                            "score": "добавленные очки"
+                            "result": "successfully"
                         }
                     )
                 ]
@@ -150,7 +157,6 @@ class SaveScoreView(APIView):
         },
     )
     def put(self, request: Request):
-
         # пробуем получить email из тела запроса
         try:
             request.data['email']
@@ -163,66 +169,7 @@ class SaveScoreView(APIView):
         except:
             return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = UserSaveScoreSerializer(data=request.data, instance=instance)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class SaveCoinsView(APIView):
-    '''
-    Изменение coins пользователя. Тело запроса:\n
-    {\n
-    "email": "youremail@mail.ru",\n
-    "coins": 15\n
-    }\n
-    '''
-
-    # указывает что запрос могут сделать только авторизованные пользователи
-    permission_classes = (IsAuthenticated,)
-
-    @extend_schema(
-        request=inline_serializer(
-            name="SaveCoinsDocSerializer",
-            fields={
-                "email": serializers.CharField(default='testemail_01@mail.ru'),
-                "coins": serializers.IntegerField(default=100),
-            },
-        ),
-        summary='Изменение coins',
-        description='Изменение coins для пользователя',
-        responses={
-            200: OpenApiResponse(
-                'Информация об объекте',
-                examples=[
-                    OpenApiExample(
-                        'Coins изменены',
-                        value={
-                            "email": "ayzikov1@mail.ru",
-                            "coins": "Количество coins пользователя после изменения"
-                        }
-                    )
-                ]
-            ),
-        },
-    )
-    def put(self, request: Request):
-
-        # пробуем получить email из тела запроса
-        try:
-            request.data['email']
-        except:
-            return Response({"email": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
-
-        # пробуем найти пользователя с таким email
-        try:
-            instance = User.objects.get(email=request.data['email'])
-        except:
-            return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # передаем данные в сериалайзер где уже происходит изменение coins и сохранение в БД
-        serializer = UserSaveCoinsSerializer(data=request.data, instance=instance)
+        serializer = SaveUserDataSerializer(data=request.data, instance=instance)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
