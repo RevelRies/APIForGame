@@ -134,6 +134,7 @@ class SaveUserDataView(APIView):
                 "deaths": serializers.IntegerField(default=1),
                 "obstacle_collisions": serializers.IntegerField(default=5),
                 "boosters": serializers.JSONField(default=dict()),
+                "unlocked_characters": serializers.JSONField(default=dict())
             },
         ),
         summary='Изменение игровых данных пользователя',

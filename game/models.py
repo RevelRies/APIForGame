@@ -70,6 +70,7 @@ class User(AbstractUser):
     deaths = models.IntegerField(default=0, verbose_name='количества смертей пользователя')
     obstacle_collisions = models.IntegerField(default=0, verbose_name='количества столкновений пользователя')
     boosters = models.JSONField(default=dict(), verbose_name='бустеры пользователя', blank=True)
+    unlocked_characters = models.JSONField(default=dict(), verbose_name='персонажи пользователя', blank=True)
 
     # строка необходима для использования CustomUserManager в запросах
     objects = CustomUserManager()

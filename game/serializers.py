@@ -10,7 +10,7 @@ class UserDataSerializer(ModelSerializer):
     season_high_score = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ['email', 'username', 'all_time_score', 'all_time_high_score', 'season_high_score', 'coins', 'deaths', 'obstacle_collisions', 'boosters']
+        fields = ['email', 'username', 'all_time_score', 'all_time_high_score', 'season_high_score', 'coins', 'deaths', 'obstacle_collisions', 'boosters', 'unlocked_characters']
         extra_kwargs = {'email': {'required': False},
                         'username': {'required': False}}
 
@@ -23,7 +23,7 @@ class SaveUserDataSerializer(ModelSerializer):
     season_high_score = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ['email', 'username', 'score', 'all_time_score', 'all_time_high_score', 'season_high_score', 'coins', 'deaths', 'obstacle_collisions', 'boosters']
+        fields = ['email', 'username', 'score', 'all_time_score', 'all_time_high_score', 'season_high_score', 'coins', 'deaths', 'obstacle_collisions', 'boosters', 'unlocked_characters']
         extra_kwargs = {'username': {'required': False}}
 
     def get_season_high_score(self, user):
@@ -46,6 +46,9 @@ class SaveUserDataSerializer(ModelSerializer):
         # изменяем boosters
         if validated_data['boosters'] != {}:
             instance.boosters = validated_data['boosters']
+        # изменяем unlocked_characters
+        if validated_data['unlocked_characters'] != {}:
+            instance.unlocked_characters = validated_data['unlocked_characters']
 
         # изменяем score
         score = validated_data['score']
