@@ -57,15 +57,13 @@ class UserDataView(APIView):
 
     @extend_schema(
         parameters=[
-            OpenApiParameter('Request body',
+            OpenApiParameter('Headers values',
                              OpenApiTypes.OBJECT,
                              OpenApiParameter.QUERY,
                              examples=[
                                  OpenApiExample(
                                      'Пример запроса',
-                                     value={
-                                         "email": "youremail@mail.ru",
-                                     }
+                                     value='email=admin@admin.ru'
                                  )
                              ]
                              ),
@@ -91,16 +89,15 @@ class UserDataView(APIView):
         },
     )
     def get(self, request: Request):
+        email = request.GET.get('email', None)
 
-        # пробуем получить email из тела запроса
-        try:
-            request.data['email']
-        except:
+        # пробуем получить email из заголовков запроса
+        if not email:
             return Response({"email": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
 
         # пробуем найти пользователя с таким email
         try:
-            instance = User.objects.get(email=request.data['email'])
+            instance = User.objects.get(email=email)
         except:
             return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -232,23 +229,23 @@ class UserLeaderboardPosition(APIView):
         },
     )
     def get(self, request: Request):
+        email = self.request.GET.get('email', None)
 
-        # пробуем получить email из тела запроса
-        try:
-            request.data['email']
-        except:
+        # пробуем получить email из заголовков запроса
+        if not email:
             return Response({"email": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
 
         # пробуем найти пользователя с таким email
         try:
-            instance = User.objects.get(email=request.data['email'])
+            instance = User.objects.get(email=email)
         except:
             return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            # создаем dict в которм ключи будут "season_(номер сезона), а значения dict с данными пользователя в этом сезоне"
-            result_data = dict()
-            for season in Season.objects.order_by("number"):
+
+        # создаем dict в которм ключи будут "season_(номер сезона), а значения dict с данными пользователя в этом сезоне"
+        result_data = dict()
+        for season in Season.objects.order_by("number"):
+            try:
                 result_data.update(
                     {f"season_{season.number}": {
                         "season_name": season.name,
@@ -256,22 +253,20 @@ class UserLeaderboardPosition(APIView):
                         "user_position": get_user_position(user=instance, season=season)
                     }}
                 )
-            return Response(result_data, status=status.HTTP_200_OK)
-        except Exception as ex:
-            return Response({"error": ex}, status=status.HTTP_409_CONFLICT)
+            except:
+                continue
+        return Response(result_data, status=status.HTTP_200_OK)
 
 
 @extend_schema_view(
     get=extend_schema(
         parameters=[
-            OpenApiParameter('Request body',
+            OpenApiParameter('Headers params',
                              OpenApiTypes.OBJECT,
                              examples=[
                                  OpenApiExample(
                                      'Пример запроса',
-                                     value={
-                                         "season_number": 3,
-                                     }
+                                     value='email=admin@admin.ru'
                                  )
                              ]
                              ),
@@ -295,9 +290,9 @@ class SeasonLeaderboard(generics.ListAPIView):
         '''
         Переопределяю метод для проверки тела запроса и вывода UserSeasonScore для данного сезона
         '''
-        try:
-            season_number = self.request.data['season_number']
-        except:
+
+        season_number = self.request.GET.get('season_number', None)
+        if not season_number:
             return Response({"season_number": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
 
         # пробуем найти пользователя с таким email

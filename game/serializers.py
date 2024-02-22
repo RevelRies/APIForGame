@@ -11,7 +11,8 @@ class UserDataSerializer(ModelSerializer):
     class Meta:
         model = User
         fields = ['email', 'username', 'all_time_score', 'all_time_high_score', 'season_high_score', 'coins', 'deaths', 'obstacle_collisions', 'boosters']
-        extra_kwargs = {'username': {'required': False}}
+        extra_kwargs = {'email': {'required': False},
+                        'username': {'required': False}}
 
     def get_season_high_score(self, user):
         user_season_score = UserSeasonScore.objects.filter(user=user).last()
