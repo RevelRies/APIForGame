@@ -96,9 +96,19 @@ class SaveUserDataSerializer(ModelSerializer):
 
 class SeasonTopLeaderboardSerializer(ModelSerializer):
     user = UserDataSerializer()
+    season = Season.objects.filter(
+        start_date__lte=timezone.now(),
+        finish_date__gte=timezone.now()
+    ).first()
+
+    season_position = serializers.SerializerMethodField()
+
     class Meta:
         model = UserSeasonScore
-        fields = ['user']
+        fields = ['user', 'season_position']
+
+    def get_season_position(self, user_season_score):
+        return get_user_position(user=user_season_score.user, season=self.season)
 
 
 class SeasonCurrentLeaderboardSerializer(ModelSerializer):

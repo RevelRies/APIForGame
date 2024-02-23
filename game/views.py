@@ -322,7 +322,7 @@ class SeasonTopLeaderboard(generics.ListAPIView):
         except:
             return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
 
-        return UserSeasonScore.objects.filter(season=season.id).order_by('-season_high_score', 'user__username')[:top_size]
+        return UserSeasonScore.objects.filter(season=season.id).order_by('-season_high_score')[:top_size]
 
 
 @extend_schema_view(
