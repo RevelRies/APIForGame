@@ -1,7 +1,10 @@
+from django.utils import timezone
+
 from .models import User, Season, UserSeasonScore
 from .serializers import (UserDataSerializer,
                           SaveUserDataSerializer,
-                          SeasonLeaderboardSerializer,
+                          SeasonTopLeaderboardSerializer,
+                          SeasonCurrentLeaderboardSerializer,
                           SeasonListSerializer)
 
 from drf_spectacular.types import OpenApiTypes
@@ -33,16 +36,9 @@ def get_user_position(user: User, season: Season):
     # 4 - фильтруем по username пользователей
     user_season_score_qs = (UserSeasonScore.objects.
                             filter(season=season).
-                            order_by("season_high_score").
-                            filter(season_high_score__gte=current_user_season_score.season_high_score).
-                            order_by("user__username").
-                            values())
+                            order_by("-season_high_score"))
 
-    # если у нас оказалось несколько пользователей с одинаковыми season_high_score
-    # тогда их позиция в лидерборде определяется в алфавитном порядке их username
-    for user_position, user_season_score in enumerate(user_season_score_qs, start=1):
-        if user_season_score['user_id'] == user.id:
-            return user_position
+    return list(user_season_score_qs.values_list('id', flat=True)).index(current_user_season_score.id) + 1
 
 class UserDataView(APIView):
     '''
@@ -57,36 +53,15 @@ class UserDataView(APIView):
 
     @extend_schema(
         parameters=[
-            OpenApiParameter('Headers values',
-                             OpenApiTypes.OBJECT,
-                             OpenApiParameter.QUERY,
-                             examples=[
-                                 OpenApiExample(
-                                     'Пример запроса',
-                                     value='email=admin@admin.ru'
-                                 )
-                             ]
-                             ),
+            OpenApiParameter(
+                name="email",
+                description=("Email пользователя"),
+                default="admin@admin.ru",
+                type=str,
+            ),
         ],
         summary='Данные пользователя',
-        description='Возвращает все данные пользователя',
-        responses={
-            200: OpenApiResponse(
-                'Информация об объекте',
-                examples=[
-                    OpenApiExample(
-                        'Успешно',
-                        value={
-                            "email": "ayzikov1@gmail.com",
-                            "username": "ayzo3",
-                            "all_time_score": 0,
-                            "all_time_high_score": 0,
-                            "coins": 0
-                        }
-                    )
-                ]
-            ),
-        },
+        description='Возвращает все данные пользователя'
     )
     def get(self, request: Request):
         email = request.GET.get('email', None)
@@ -174,60 +149,25 @@ class SaveUserDataView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UserLeaderboardPosition(APIView):
+class UserLeaderboardAllSeasonPosition(APIView):
     '''
-    Положение пользователя в лидербордах всех сезонов. Тело запроса:\n
-    {\n
-    "email": "youremail@mail.ru",\n
-    }\n
+    Положение пользователя в лидербордах всех сезонов.
     '''
 
     # указывает что запрос могут сделать только авторизованные пользователи
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
 
     @extend_schema(
         parameters=[
-            OpenApiParameter('Request body',
-                             OpenApiTypes.OBJECT,
-                             examples=[
-                                 OpenApiExample(
-                                     'Пример запроса',
-                                     value={
-                                         "email": "youremail@mail.ru",
-                                     }
-                                 )
-                             ]
-                             ),
-        ],
-        summary='Лидерборд пользователя',
-        description='Положение пользователя в лидербордах всех сезонов',
-        responses={
-            200: OpenApiResponse(
-                'Информация об объекте',
-                examples=[
-                    OpenApiExample(
-                        'Успешный успех',
-                        value={
-                            "season_1": {
-                                "season_name": "название сезона",
-                                "season_number": "номер сезона",
-                                "user_position": "место пользователя в этом сезоне"
-                            },
-                            "season_2": {
-                                "season_name": "testseason2",
-                                "season_number": 2,
-                                "user_position": 4
-                            },
-                            "season_3": {
-                                "season_name": "testseason3",
-                                "season_number": 3,
-                                "user_position": 5
-                            }
-                        }
-                    )
-                ]
+            OpenApiParameter(
+                name="email",
+                description=("Email пользователя"),
+                default="admin@admin.ru",
+                type=str,
             ),
-        },
+        ],
+        summary='Лидерборд пользователя ВСЕ СЕЗОНЫ',
+        description='Положение пользователя в лидербордах всех сезонов',
     )
     def get(self, request: Request):
         email = self.request.GET.get('email', None)
@@ -259,24 +199,97 @@ class UserLeaderboardPosition(APIView):
         return Response(result_data, status=status.HTTP_200_OK)
 
 
+class UserLeaderboardCurrentSeasonPosition(generics.ListAPIView):
+    '''
+        Положение пользователя в текущем сезоне.
+    '''
+
+    # указывает что запрос могут сделать только авторизованные пользователи
+    # permission_classes = (IsAuthenticated,)
+    serializer_class = SeasonCurrentLeaderboardSerializer
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="email",
+                description=("Email пользователя"),
+                default="admin@admin.ru",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="count_around",
+                description=("Количество пользователей до и после указанного пользователя"),
+                default=3,
+                type=int,
+            ),
+        ],
+        summary='Лидерборд пользователя ТЕКУЩИЙ СЕЗОНЫ',
+        description='Положение пользователя в лидерборде текущего сезонона. Если count_around не передан по дефолту он равен 3',
+    )
+
+    def get_queryset(self):
+        email = self.request.GET.get('email', None)
+        count_around = int(self.request.GET.get('count_around', 3))
+        season = Season.objects.filter(
+            start_date__lte=timezone.now(),
+            finish_date__gte=timezone.now()
+        ).first()
+
+        # пробуем получить email из заголовков запроса
+        if not email:
+            return Response({"email": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        # пробуем найти пользователя с таким email
+        try:
+            user = User.objects.get(email=email)
+        except:
+            return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Получаем индекс пользователя в списке QS
+        user_season_position_in_qs = get_user_position(season=season, user=user) - 1
+
+        # число пользователей в сезоне
+        count_users_season = UserSeasonScore.objects.filter(season=season.id).order_by('-season_high_score').count()
+
+        # Вычисляем срез пользователей которых нужно показывать
+        if user_season_position_in_qs - count_around < 0:
+            start = 0
+        else:
+            start = user_season_position_in_qs - count_around
+
+        if user_season_position_in_qs + count_around + 1 > count_users_season:
+            finish = count_users_season
+        else:
+            finish = user_season_position_in_qs + count_around + 1
+
+        # QS всех пользователей в лидерборде
+        return UserSeasonScore.objects.filter(season=season.id).order_by('-season_high_score')[start:finish]
+
+
+
+
+
 @extend_schema_view(
     get=extend_schema(
         parameters=[
-            OpenApiParameter('Headers params',
-                             OpenApiTypes.OBJECT,
-                             examples=[
-                                 OpenApiExample(
-                                     'Пример запроса',
-                                     value='email=admin@admin.ru'
-                                 )
-                             ]
-                             ),
+            OpenApiParameter(
+                name="season_number",
+                description=("Номер сезона"),
+                default=3,
+                type=int,
+            ),
+            OpenApiParameter(
+                name="top_size",
+                description=("Количество топ игроков"),
+                default=5,
+                type=int,
+            )
         ],
-        summary='Лидерборд сезона',
-        description='Лидерборд сезона',
+        summary='Топ игроков сезона',
+        description='Если не передавать параметры, то по умолчанию выбирается текущий сезон и топ 5 игроков',
     )
 )
-class SeasonLeaderboard(generics.ListAPIView):
+class SeasonTopLeaderboard(generics.ListAPIView):
     '''
     Получаем лидерборд сезона. Тело запроса:\n
     {\n
@@ -285,41 +298,37 @@ class SeasonLeaderboard(generics.ListAPIView):
     '''
 
     permission_classes = (IsAuthenticated,)
-    serializer_class = SeasonLeaderboardSerializer
+    serializer_class = SeasonTopLeaderboardSerializer
 
     def get_queryset(self):
         '''
-        Переопределяю метод для проверки тела запроса и вывода UserSeasonScore для данного сезона
+        Переопределяю метод для проверки тела запроса и вывода топа игроков для текущего сезона
         '''
 
+        # получаем номер сезона из параметров запроса
         season_number = self.request.GET.get('season_number', None)
         if not season_number:
-            return Response({"season_number": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+            season_number = Season.objects.filter(
+                start_date__lte=timezone.now(),
+                finish_date__gte=timezone.now()
+            ).first().number
 
-        # пробуем найти пользователя с таким email
+        # получаем количество топа игроков которых нужно вывести
+        top_size = int(self.request.GET.get('top_size', 5))
+
+        # пробуем найти сезон с таким номером
         try:
             season = Season.objects.get(number=season_number)
         except:
             return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
 
-        return UserSeasonScore.objects.filter(season=season.id).order_by('-season_high_score', 'user__username')
+        return UserSeasonScore.objects.filter(season=season.id).order_by('-season_high_score', 'user__username')[:top_size]
 
 
 @extend_schema_view(
     get=extend_schema(
-        parameters=[
-            OpenApiParameter('Request body',
-                             OpenApiTypes.OBJECT,
-                             examples=[
-                                 OpenApiExample(
-                                     'Пример запроса',
-                                     value={}
-                                 )
-                             ]
-                             ),
-        ],
         summary='Список всех сезонов',
-        description='Список сезонов',
+        description='Возвращает список всех сезонов. Для запроса ничего передавать не надо',
     )
 )
 class SeasonList(generics.ListAPIView):

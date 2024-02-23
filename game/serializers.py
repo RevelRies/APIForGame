@@ -5,6 +5,23 @@ from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer, Serializer
 
+def get_user_position(user: User, season: Season):
+    '''
+    Получаем позицию пользователя в сезоне в соответствии с его season_high_score
+    '''
+    current_user_season_score = UserSeasonScore.objects.get(season=season, user=user)
+
+    # получаем словарь из объектов QuerySet
+    # фильтрация происходит в таком порядке
+    # 1 - QS текущего сезона
+    # 2 - фильтруем по убыванию season_high_score
+    # 3 - QS у которых season_high_score больше либо равен season_high_score данного пользователя
+    # 4 - фильтруем по username пользователей
+    user_season_score_qs = (UserSeasonScore.objects.
+                            filter(season=season).
+                            order_by("-season_high_score"))
+
+    return list(user_season_score_qs.values_list('id', flat=True)).index(current_user_season_score.id) + 1
 
 class UserDataSerializer(ModelSerializer):
     season_high_score = serializers.SerializerMethodField()
@@ -77,11 +94,27 @@ class SaveUserDataSerializer(ModelSerializer):
         return instance
 
 
-class SeasonLeaderboardSerializer(ModelSerializer):
+class SeasonTopLeaderboardSerializer(ModelSerializer):
     user = UserDataSerializer()
     class Meta:
         model = UserSeasonScore
         fields = ['user']
+
+
+class SeasonCurrentLeaderboardSerializer(ModelSerializer):
+    user = UserDataSerializer()
+    season = Season.objects.filter(
+        start_date__lte=timezone.now(),
+        finish_date__gte=timezone.now()
+    ).first()
+
+    season_position = serializers.SerializerMethodField()
+    class Meta:
+        model = UserSeasonScore
+        fields = ['user', 'season_position']
+
+    def get_season_position(self, user_season_score):
+        return get_user_position(user=user_season_score.user, season=self.season)
 
 
 class SeasonListSerializer(ModelSerializer):
