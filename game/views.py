@@ -155,7 +155,7 @@ class UserLeaderboardAllSeasonPosition(APIView):
     '''
 
     # указывает что запрос могут сделать только авторизованные пользователи
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
     @extend_schema(
         parameters=[
@@ -205,7 +205,7 @@ class UserLeaderboardCurrentSeasonPosition(generics.ListAPIView):
     '''
 
     # указывает что запрос могут сделать только авторизованные пользователи
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     serializer_class = SeasonCurrentLeaderboardSerializer
 
     @extend_schema(
