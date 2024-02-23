@@ -199,16 +199,8 @@ class UserLeaderboardAllSeasonPosition(APIView):
         return Response(result_data, status=status.HTTP_200_OK)
 
 
-class UserLeaderboardCurrentSeasonPosition(generics.ListAPIView):
-    '''
-        Положение пользователя в текущем сезоне.
-    '''
-
-    # указывает что запрос могут сделать только авторизованные пользователи
-    permission_classes = (IsAuthenticated,)
-    serializer_class = SeasonCurrentLeaderboardSerializer
-
-    @extend_schema(
+@extend_schema_view(
+    get=extend_schema(
         parameters=[
             OpenApiParameter(
                 name="email",
@@ -223,9 +215,17 @@ class UserLeaderboardCurrentSeasonPosition(generics.ListAPIView):
                 type=int,
             ),
         ],
-        summary='Лидерборд пользователя ТЕКУЩИЙ СЕЗОНЫ',
+        summary='Лидерборд пользователя ТЕКУЩИЙ СЕЗОН',
         description='Положение пользователя в лидерборде текущего сезонона. Если count_around не передан по дефолту он равен 3',
-    )
+    ))
+class UserLeaderboardCurrentSeasonPosition(generics.ListAPIView):
+    '''
+        Положение пользователя в текущем сезоне.
+    '''
+
+    # указывает что запрос могут сделать только авторизованные пользователи
+    permission_classes = (IsAuthenticated,)
+    serializer_class = SeasonCurrentLeaderboardSerializer
 
     def get_queryset(self):
         email = self.request.GET.get('email', None)
