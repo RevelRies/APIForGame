@@ -220,7 +220,7 @@ class UserLeaderboardAllSeasonPosition(APIView):
     ))
 class UserLeaderboardCurrentSeasonPosition(generics.ListAPIView):
     '''
-        Положение пользователя в текущем сезоне.
+    Положение пользователя в текущем сезоне.
     '''
 
     # указывает что запрос могут сделать только авторизованные пользователи
@@ -297,7 +297,6 @@ class SeasonTopLeaderboard(generics.ListAPIView):
     }\n
     '''
 
-    permission_classes = (IsAuthenticated,)
     serializer_class = SeasonTopLeaderboardSerializer
 
     def get_queryset(self):

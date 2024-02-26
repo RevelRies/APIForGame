@@ -93,6 +93,7 @@ class Season(models.Model):
     start_date = models.DateTimeField(verbose_name='время начала сезона')
     finish_date = models.DateTimeField(verbose_name='время окончания сезона')
     prize = models.CharField(max_length=250, blank=True, verbose_name='приз сезона')
+    is_active = models.BooleanField(default=False, verbose_name='текущий сезон')
 
     class Meta:
         verbose_name = 'Сезон'
