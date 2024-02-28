@@ -22,10 +22,15 @@ def create_new_user_season_score(sender, instance, created, **kwargs):
     '''
 
     # Выбирает текущий сезон
-    current_season = Season.objects.filter(
-        start_date__lte=timezone.now(),
-        finish_date__gte=timezone.now()
-    ).first()
+    # Обернуто для миграций
+    # После добавленеия поля is_active в Season модель почему-то из-за этих строк не выполняются миграции
+    try:
+        current_season = Season.objects.filter(
+            start_date__lte=timezone.now(),
+            finish_date__gte=timezone.now()
+        ).first()
+    except:
+        pass
 
     if created:
         UserSeasonScore.objects.create(

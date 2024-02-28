@@ -96,10 +96,16 @@ class SaveUserDataSerializer(ModelSerializer):
 
 class SeasonTopLeaderboardSerializer(ModelSerializer):
     user = UserDataSerializer()
-    season = Season.objects.filter(
-        start_date__lte=timezone.now(),
-        finish_date__gte=timezone.now()
-    ).first()
+
+    # Обернуто для миграций
+    # После добавленеия поля is_active в Season модель почему-то из-за этих строк не выполняются миграции
+    try:
+        season = Season.objects.filter(
+            start_date__lte=timezone.now(),
+            finish_date__gte=timezone.now()
+        ).first()
+    except:
+        pass
 
     season_position = serializers.SerializerMethodField()
 
@@ -113,10 +119,16 @@ class SeasonTopLeaderboardSerializer(ModelSerializer):
 
 class SeasonCurrentLeaderboardSerializer(ModelSerializer):
     user = UserDataSerializer()
-    season = Season.objects.filter(
-        start_date__lte=timezone.now(),
-        finish_date__gte=timezone.now()
-    ).first()
+
+    # Обернуто для миграций
+    # После добавленеия поля is_active в Season модель почему-то из-за этих строк не выполняются миграции
+    try:
+        season = Season.objects.filter(
+            start_date__lte=timezone.now(),
+            finish_date__gte=timezone.now()
+        ).first()
+    except:
+        pass
 
     season_position = serializers.SerializerMethodField()
     class Meta:
