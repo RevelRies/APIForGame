@@ -27,7 +27,7 @@ class UserDataSerializer(ModelSerializer):
     season_high_score = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ['email', 'username', 'all_time_score', 'all_time_high_score', 'season_high_score', 'coins', 'deaths', 'obstacle_collisions', 'boosters', 'unlocked_characters']
+        fields = ['email', 'username', 'all_time_score', 'all_time_high_score', 'season_high_score', 'coins', 'deaths', 'obstacle_collisions', 'boosters', 'selected_character', 'unlocked_characters']
         extra_kwargs = {'email': {'required': False},
                         'username': {'required': False}}
 
