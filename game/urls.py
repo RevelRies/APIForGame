@@ -3,7 +3,8 @@ from .views import (UserDataView,
                     UserLeaderboardAllSeasonPosition,
                     UserLeaderboardCurrentSeasonPosition,
                     SeasonTopLeaderboard,
-                    SeasonList)
+                    SeasonList,
+                    Purchase)
 
 from django.urls import path
 
@@ -15,6 +16,7 @@ urlpatterns = [
     path('user_leaderboard_current_season/', UserLeaderboardCurrentSeasonPosition.as_view(), name='user_leaderboard_current_season'),
     path('season_top_leaderboard/', SeasonTopLeaderboard.as_view(), name='season_leaderboard'),
     path('season_list/', SeasonList.as_view(), name='season_list'),
+    path('purchase/', Purchase.as_view(), name='purchase'),
 ]
 
 app_name = 'game'

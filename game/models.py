@@ -24,7 +24,7 @@ class CustomUserManager(UserManager):
 
     def _generate_username(self):
         ''' Функция рандомно генерирует username для каждого нового пользователя '''
-        return uuid.uuid4()
+        return str(uuid.uuid4()).split('-')[0]
 
     def _create_user(self, email, password, username, commit, is_staff=False, is_superuser=False):
         ''' Переопределение функции чтобы, убрать обязательный ввод username '''
@@ -62,20 +62,21 @@ class CustomUserManager(UserManager):
 
 
 class User(AbstractUser):
-    email = models.EmailField(unique=True, verbose_name='логин пользователя')
+    email = models.EmailField(unique=True, verbose_name='логин')
     score = models.IntegerField(default=0, verbose_name='текущие очки для сериализатора')
     all_time_score = models.IntegerField(default=0, verbose_name='количество очков за все время')
     all_time_high_score = models.IntegerField(default=0, verbose_name='максимальный результат за все время')
-    coins = models.IntegerField(default=0, verbose_name='количество монет у пользователя')
-    deaths = models.IntegerField(default=0, verbose_name='количества смертей пользователя')
-    obstacle_collisions = models.IntegerField(default=0, verbose_name='количества столкновений пользователя')
-    boosters = models.JSONField(default=dict(), verbose_name='бустеры пользователя', blank=True)
-    unlocked_characters = models.JSONField(default=dict(), verbose_name='персонажи пользователя', blank=True)
+    coins = models.IntegerField(default=0, verbose_name='количество монет')
+    deaths = models.IntegerField(default=0, verbose_name='количества смертей')
+    obstacle_collisions = models.IntegerField(default=0, verbose_name='количества столкновений')
+    boosters = models.JSONField(default={'Invincibility': 0, 'Speed': 0, 'Magnet': 0}, verbose_name='бустеры', blank=True)
+    selected_character = models.CharField(default='DefaultCharacter', max_length=250, verbose_name='выбранный персонаж')
+    unlocked_characters = models.JSONField(default=['DefaultCharacter', 'Girl'], verbose_name='персонажи пользователя', blank=True)
 
     # строка необходима для использования CustomUserManager в запросах
     objects = CustomUserManager()
 
-# обозначаем что в поле username теперь должен быть email
+    # обозначаем что в поле username теперь должен быть email
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
 
@@ -116,3 +117,35 @@ class UserSeasonScore(models.Model):
     def __str__(self):
         return f"Результаты за сезон № {self.season.number} игрока {self.user.username}"
 
+
+class Character(models.Model):
+    name = models.CharField(max_length=250, verbose_name='имя')
+    description = models.CharField(max_length=500, verbose_name='описание')
+    price = models.IntegerField(verbose_name='цена')
+    game_over_messages = models.JSONField(default=dict(), verbose_name='game_over_messages', blank=True)
+
+    class Meta:
+        verbose_name = 'Персонаж'
+        verbose_name_plural = 'Персонажи'
+
+    def __str__(self):
+        return f"{self.name}"
+
+
+class Booster(models.Model):
+    class Type(models.TextChoices):
+        INVINCIBILITY = 'Invincibility'
+        SPEED = 'Speed'
+        MAGNET = 'Magnet'
+
+    name = models.CharField(max_length=250, verbose_name='название')
+    description = models.CharField(max_length=500, verbose_name='описание')
+    type = models.CharField(max_length=50, choices=Type.choices)
+    price = models.IntegerField(verbose_name='цена')
+
+    class Meta:
+        verbose_name = 'Бустер'
+        verbose_name_plural = 'Бустеры'
+
+    def __str__(self):
+        return f"{self.type}"

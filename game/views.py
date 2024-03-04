@@ -1,11 +1,13 @@
 from django.utils import timezone
 
-from .models import User, Season, UserSeasonScore
+from .models import User, Season, UserSeasonScore, Booster, Character
 from .serializers import (UserDataSerializer,
                           SaveUserDataSerializer,
                           SeasonTopLeaderboardSerializer,
                           SeasonCurrentLeaderboardSerializer,
-                          SeasonListSerializer)
+                          SeasonListSerializer,
+                          PurchaseBoosterSerializer,
+                          PurchaseCharacterSerializer)
 
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (extend_schema,
@@ -339,3 +341,71 @@ class SeasonList(generics.ListAPIView):
     queryset = Season.objects.all().order_by('number')
     serializer_class = SeasonListSerializer
     permission_classes = (IsAuthenticated,)
+
+
+class Purchase(APIView):
+    '''
+    Метод для покупки персонажей и бустов
+    '''
+
+    # permission_classes = (IsAuthenticated,)
+    def put(self, request: Request):
+        # пробуем получить email из тела запроса
+        try:
+            request.data['email']
+        except:
+            return Response({"email": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        # пробуем найти пользователя с таким email
+        try:
+            instance = User.objects.get(email=request.data['email'])
+        except:
+            return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # пробуем получить type из тела запроса
+        try:
+            type = request.data['type']
+            if type not in ('booster', 'character'):
+                return Response({"type": ["This field must contain booster or character"]}, status=status.HTTP_400_BAD_REQUEST)
+        except:
+            return Response({"type": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        # пробуем получить name из тела запроса
+        try:
+            name = request.data['name']
+        except:
+            return Response({"name": ["This field is required."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            if type == 'booster':
+                booster = Booster.objects.get(name=name)
+                # проверяем достаточно ли у пользователя coins
+                if instance.coins >= booster.price:
+                    # вычитаем coins
+                    instance.coins -= booster.price
+                    # добавляем бустер
+                    instance.boosters[booster.type] += 1
+                else:
+                    return Response({"error": ["not enough coins"]}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                character = Character.objects.get(name=name)
+                # проверяем достаточно ли у пользователя coins
+                if instance.coins >= character.price:
+                    # вычитаем coins
+                    instance.coins -= character.price
+                    # добавляем персонажа
+                    instance.unlocked_characters.append(character.name)
+                else:
+                    return Response({"error": ["not enough coins"]}, status=status.HTTP_400_BAD_REQUEST)
+
+            instance.save()
+
+            # возвращаем данные пользователя
+            serializer = UserDataSerializer(instance=instance, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as ex:
+            return Response({"error": ex}, status=status.HTTP_400_BAD_REQUEST)

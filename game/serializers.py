@@ -1,9 +1,9 @@
-from .models import User, Season, UserSeasonScore
+from .models import User, Season, UserSeasonScore, Booster, Character
 
 from django.utils import timezone
 
 from rest_framework import serializers
-from rest_framework.serializers import ModelSerializer, Serializer
+from rest_framework.serializers import ModelSerializer
 
 def get_user_position(user: User, season: Season):
     '''
@@ -145,9 +145,47 @@ class SeasonListSerializer(ModelSerializer):
         fields = '__all__'
 
 
+class PurchaseBoosterSerializer(ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ['email', 'coins', 'boosters', 'selected_character', 'unlocked_characters']
+        # extra_kwargs = {'name': {'required': False}}
+
+    # def to_representation(self, obj):
+    #     ''' Переопределение функции для исключения из вывода поля name '''
+    #     ret = super().to_representation(obj)
+    #     ret.pop('name')
+    #     return ret
+
+    def update(self, instance: User, validated_data):
+        booster = Booster.objects.get(name=validated_data['name'])
+        # проверяем достаточно ли у пользователя coins
+        if instance.coins >= booster.price:
+            # вычитаем coins
+            instance.coins -= booster.price
+            # добавляем бустер
+            instance.boosters[booster.type] += 1
+        else:
+            raise {'error': 'not enough coins'}
+
+        instance.save()
+        return instance
+
+        # else:
+        #     character = Character.objects.get(name=validated_data['name'])
+        #     # проверяем достаточно ли у пользователя coins
+        #     if instance.coins >= character.price:
+        #         # вычитаем coins
+        #         instance.coins -= character.price
+        #         # добавляем персонажа
+        #         instance.unlocked_characters.append(character.name)
+        #     else:
+        #         raise {'error': 'not enough coins'}
 
 
-
+class PurchaseCharacterSerializer(ModelSerializer):
+    pass
 
 
 
