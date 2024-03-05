@@ -37,7 +37,7 @@ class UserSerializer(ModelSerializer):
 
     def generate_username(self):
         ''' Функция рандомно генерирует username для каждого нового пользователя '''
-        return uuid.uuid4()
+        return str(uuid.uuid4()).split('-')[0]
 
     def create(self, validated_data):
         ''' Переопределяем метод create для того чтобы пароль сохранялся не в чистом виде, а закодированный '''

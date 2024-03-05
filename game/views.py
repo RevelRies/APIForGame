@@ -344,7 +344,7 @@ class Purchase(APIView):
     Метод для покупки персонажей и бустов
     '''
 
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
     @extend_schema(
         request=inline_serializer(
@@ -405,7 +405,7 @@ class SelectCharacter(APIView):
     Метод для выбора текущего персонажа
     '''
 
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
     @extend_schema(
         request=inline_serializer(
