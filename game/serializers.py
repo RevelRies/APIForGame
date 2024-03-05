@@ -40,7 +40,8 @@ class SaveUserDataSerializer(ModelSerializer):
     season_high_score = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ['email', 'username', 'score', 'all_time_score', 'all_time_high_score', 'season_high_score', 'coins', 'deaths', 'obstacle_collisions', 'boosters', 'unlocked_characters']
+        fields = ['email', 'username', 'score', 'all_time_score', 'all_time_high_score', 'season_high_score', 'coins',
+                  'deaths', 'obstacle_collisions']
         extra_kwargs = {'username': {'required': False}}
 
     def get_season_high_score(self, user):
@@ -60,12 +61,6 @@ class SaveUserDataSerializer(ModelSerializer):
         instance.deaths += validated_data['deaths']
         # изменяем obstacle_collisions
         instance.obstacle_collisions += validated_data['obstacle_collisions']
-        # изменяем boosters
-        if validated_data['boosters'] != {}:
-            instance.boosters = validated_data['boosters']
-        # изменяем unlocked_characters
-        if validated_data['unlocked_characters'] != {}:
-            instance.unlocked_characters = validated_data['unlocked_characters']
 
         # изменяем score
         score = validated_data['score']
@@ -145,47 +140,9 @@ class SeasonListSerializer(ModelSerializer):
         fields = '__all__'
 
 
-class PurchaseBoosterSerializer(ModelSerializer):
-
-    class Meta:
-        model = User
-        fields = ['email', 'coins', 'boosters', 'selected_character', 'unlocked_characters']
-        # extra_kwargs = {'name': {'required': False}}
-
-    # def to_representation(self, obj):
-    #     ''' Переопределение функции для исключения из вывода поля name '''
-    #     ret = super().to_representation(obj)
-    #     ret.pop('name')
-    #     return ret
-
-    def update(self, instance: User, validated_data):
-        booster = Booster.objects.get(name=validated_data['name'])
-        # проверяем достаточно ли у пользователя coins
-        if instance.coins >= booster.price:
-            # вычитаем coins
-            instance.coins -= booster.price
-            # добавляем бустер
-            instance.boosters[booster.type] += 1
-        else:
-            raise {'error': 'not enough coins'}
-
-        instance.save()
-        return instance
-
-        # else:
-        #     character = Character.objects.get(name=validated_data['name'])
-        #     # проверяем достаточно ли у пользователя coins
-        #     if instance.coins >= character.price:
-        #         # вычитаем coins
-        #         instance.coins -= character.price
-        #         # добавляем персонажа
-        #         instance.unlocked_characters.append(character.name)
-        #     else:
-        #         raise {'error': 'not enough coins'}
-
-
-class PurchaseCharacterSerializer(ModelSerializer):
+class SelectCharacterSerializer(ModelSerializer):
     pass
+
 
 
 
