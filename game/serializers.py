@@ -140,8 +140,16 @@ class SeasonListSerializer(ModelSerializer):
         fields = '__all__'
 
 
-class SelectCharacterSerializer(ModelSerializer):
-    pass
+class BoostersListSerializer(ModelSerializer):
+    class Meta:
+        model = Booster
+        fields = '__all__'
+
+
+class CharactersListSerializer(ModelSerializer):
+    class Meta:
+        model = Character
+        fields = '__all__'
 
 
 

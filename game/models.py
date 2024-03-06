@@ -121,10 +121,11 @@ class UserSeasonScore(models.Model):
 
 
 class Character(models.Model):
+    string_id = models.CharField(max_length=250, verbose_name='frontend id')
     name = models.CharField(max_length=250, verbose_name='имя')
     description = models.CharField(max_length=500, verbose_name='описание')
     price = models.IntegerField(verbose_name='цена')
-    game_over_messages = models.JSONField(default=dict(), verbose_name='game_over_messages', blank=True)
+    game_over_messages = models.JSONField(verbose_name='game_over_messages', blank=True)
 
     class Meta:
         verbose_name = 'Персонаж'

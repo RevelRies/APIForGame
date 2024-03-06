@@ -6,7 +6,9 @@ from .serializers import (UserDataSerializer,
                           SaveUserDataSerializer,
                           SeasonTopLeaderboardSerializer,
                           SeasonCurrentLeaderboardSerializer,
-                          SeasonListSerializer,)
+                          SeasonListSerializer,
+                          BoostersListSerializer,
+                          CharactersListSerializer,)
 
 from drf_spectacular.utils import (extend_schema,
                                    extend_schema_view,
@@ -339,58 +341,38 @@ class SeasonList(generics.ListAPIView):
     permission_classes = (IsAuthenticated,)
 
 
-class Purchase(APIView):
-    '''
-    Метод для покупки персонажей и бустов
-    '''
+class PurchaseBooster(APIView):
+    ''' Метод для покупки бустера '''
 
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
 
     @extend_schema(
         request=inline_serializer(
-            name="PurchaseSerializer",
+            name="PurchaseBoosterSerializer",
             fields={
                 "email": serializers.CharField(default='testemail_01@mail.ru'),
-                "type": serializers.CharField(default='booster'),
-                "name": serializers.CharField(default='Speed')
+                "type": serializers.CharField(default='Speed')
             },
         ),
-        summary='Покупка бустеров и персонажей',
-        description='В type передается booster/character в зависимости от покупки')
+        summary='Покупка бустеров',
+        description='При успешном запросе пользователь получает +1 бустер указанного type')
     def put(self, request: Request):
-        # пробуем получить email из тела запроса
         try:
             email = request.data['email']
-            instance = User.objects.get(email=email)
-            name = request.data['name']
             type = request.data['type']
-            if type not in ('booster', 'character'):
-                return Response({"type": "This field must contain 'booster' or 'character'"}, status=status.HTTP_400_BAD_REQUEST)
+            user = User.objects.get(email=email)
 
-            if type == 'booster':
-                booster = Booster.objects.get(name=name)
-                # проверяем достаточно ли у пользователя coins
-                if instance.coins >= booster.price:
-                    # вычитаем coins
-                    instance.coins -= booster.price
-                    # добавляем бустер
-                    instance.boosters[booster.type] += 1
-                else:
-                    return Response({"error": "not enough coins"}, status=status.HTTP_400_BAD_REQUEST)
+            booster = Booster.objects.get(type=type)
+            # проверяем достаточно ли у пользователя coins
+            if user.coins >= booster.price:
+                # вычитаем coins
+                user.coins -= booster.price
+                # добавляем бустер
+                user.boosters[booster.type] += 1
             else:
-                character = Character.objects.get(name=name)
-                # проверяем достаточно ли у пользователя coins
-                if instance.coins >= character.price:
-                    # вычитаем coins
-                    instance.coins -= character.price
-                    # добавляем персонажа
-                    instance.unlocked_characters.append(character.name)
-                else:
-                    return Response({"error": "not enough coins"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"error": "not enough coins"}, status=status.HTTP_400_BAD_REQUEST)
 
-            instance.save()
-
-            serializer = UserDataSerializer(instance=instance, data=request.data)
+            serializer = UserDataSerializer(instance=user, data=request.data)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -399,6 +381,79 @@ class Purchase(APIView):
         except Exception as ex:
             return Response({"error": f"{ex}"}, status=status.HTTP_400_BAD_REQUEST)
 
+
+class PurchaseCharacter(APIView):
+    ''' Метод для покупки персонажа '''
+
+    # permission_classes = (IsAuthenticated,)
+
+    @extend_schema(
+        request=inline_serializer(
+            name="PurchaseCharacterSerializer",
+            fields={
+                "email": serializers.CharField(default='testemail_01@mail.ru'),
+                "string_id": serializers.CharField(default='Petr')
+            },
+        ),
+        summary='Покупка персонажей',
+        description='При успешном запросе пользователю добавляется персонаж')
+    def put(self, request: Request):
+        try:
+            email = request.data['email']
+            string_id = request.data['string_id']
+            user = User.objects.get(email=email)
+
+            character = Character.objects.get(string_id=string_id)
+            # проверяем достаточно ли у пользователя coins
+            if user.coins >= character.price:
+                # вычитаем coins
+                user.coins -= character.price
+                # добавляем персонажа
+                user.unlocked_characters.append(character.string_id)
+            else:
+                return Response({"error": "not enough coins"}, status=status.HTTP_400_BAD_REQUEST)
+
+            serializer = UserDataSerializer(instance=user, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as ex:
+            return Response({"error": f"{ex}"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PurchaseQuiz(APIView):
+    ''' Метод для покупки викторины '''
+
+    # permission_classes = (IsAuthenticated,)
+
+    @extend_schema(
+        request=inline_serializer(
+            name="PurchaseQuizSerializer",
+            fields={
+                "email": serializers.CharField(default='testemail_01@mail.ru'),
+                "price": serializers.IntegerField(default=350)
+            },
+        ),
+        summary='Покупка викторины',
+        description='При успешном запросе у пользователя списываются деньги')
+    def put(self, request: Request):
+        try:
+            email = request.data['email']
+            price = request.data['price']
+            user = User.objects.get(email=email)
+
+            if user.coins >= price:
+                user.coins -= price
+                user.save()
+            else:
+                return Response({"error": "not enough coins"}, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response({"success": "the purchase was made successfully"}, status=status.HTTP_200_OK)
+
+        except Exception as ex:
+            return Response({"error": f"{ex}"}, status=status.HTTP_400_BAD_REQUEST)
 
 class SelectCharacter(APIView):
     '''
@@ -441,4 +496,22 @@ class SelectCharacter(APIView):
             return Response({"error": "Most likely, such a character does not exist"}, status=status.HTTP_400_BAD_REQUEST)
         except ValueError:
             return Response({"error": "The user did not purchase this character"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class EditBooster(APIView):
+    pass
+
+
+class BoostersList(generics.ListAPIView):
+    ''' Список всех бустеров '''
+
+    queryset = Booster.objects.all().order_by('type')
+    serializer_class = BoostersListSerializer
+
+
+class CharactersList(generics.ListAPIView):
+    ''' Список всех персонажей '''
+
+    queryset = Character.objects.all().order_by('string_id')
+    serializer_class = CharactersListSerializer
 
