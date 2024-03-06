@@ -344,31 +344,31 @@ class SeasonList(generics.ListAPIView):
 class PurchaseBooster(APIView):
     ''' Метод для покупки бустера '''
 
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
     @extend_schema(
         request=inline_serializer(
             name="PurchaseBoosterSerializer",
             fields={
                 "email": serializers.CharField(default='testemail_01@mail.ru'),
-                "type": serializers.CharField(default='Speed')
+                "string_id": serializers.CharField(default='Speed')
             },
         ),
         summary='Покупка бустеров',
-        description='При успешном запросе пользователь получает +1 бустер указанного type')
+        description='При успешном запросе пользователь получает +1 бустер указанного string_id')
     def put(self, request: Request):
         try:
             email = request.data['email']
-            type = request.data['type']
+            string_id = request.data['string_id']
             user = User.objects.get(email=email)
 
-            booster = Booster.objects.get(type=type)
+            booster = Booster.objects.get(string_id=string_id)
             # проверяем достаточно ли у пользователя coins
             if user.coins >= booster.price:
                 # вычитаем coins
                 user.coins -= booster.price
                 # добавляем бустер
-                user.boosters[booster.type] += 1
+                user.boosters[booster.string_id] += 1
             else:
                 return Response({"error": "not enough coins"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -385,7 +385,7 @@ class PurchaseBooster(APIView):
 class PurchaseCharacter(APIView):
     ''' Метод для покупки персонажа '''
 
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
     @extend_schema(
         request=inline_serializer(
@@ -426,7 +426,7 @@ class PurchaseCharacter(APIView):
 class PurchaseQuiz(APIView):
     ''' Метод для покупки викторины '''
 
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
     @extend_schema(
         request=inline_serializer(
@@ -467,7 +467,7 @@ class SelectCharacter(APIView):
             name="SelectCharacterSerializer",
             fields={
                 "email": serializers.CharField(default='testemail_01@mail.ru'),
-                "name": serializers.CharField(default='Girl')
+                "string_id": serializers.CharField(default='Girl')
             },
         ),
         summary='Выбор текущего персонажа пользователя',
@@ -476,17 +476,17 @@ class SelectCharacter(APIView):
         ''' получаем пользователя по email из тела запроса '''
         try:
             email = request.data['email']
-            name = request.data['name']
-            instance = User.objects.get(email=email)
+            string_id = request.data['string_id']
+            user = User.objects.get(email=email)
 
-            if Character.objects.get(name=name):
-                if name not in instance.unlocked_characters:
+            if Character.objects.get(string_id=string_id):
+                if string_id not in user.unlocked_characters:
                     raise ValueError
                 else:
-                    instance.selected_character = name
-                    instance.save()
+                    user.selected_character = string_id
+                    user.save()
 
-            serializer = UserDataSerializer(instance=instance, data=request.data)
+            serializer = UserDataSerializer(instance=user, data=request.data)
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_200_OK)
@@ -499,16 +499,67 @@ class SelectCharacter(APIView):
 
 
 class EditBooster(APIView):
-    pass
+    ''' Изменение количества бустеров '''
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(
+        request=inline_serializer(
+            name="EditBoosterSerializer",
+            fields={
+                "email": serializers.CharField(default='testemail_01@mail.ru'),
+                "speed": serializers.IntegerField(default=1)
+            },
+        ),
+        summary='Изменение количества бустеров',
+        description='В теле запроса обязательно отправлять email, остальные ключи должны называться как string_id '
+                    'бустера только с маленькой буквы. '
+                    'Если в теле запроса не будет одного или нескольких бустеров, '
+                    'то их количество у пользователя не изменится')
+    def put(self, request: Request):
+        try:
+            email = request.data['email']
+            user = User.objects.get(email=email)
+
+            # пытаемся получить из запроса значение string_id бустера, если string_id не прислали,
+            # берем текущее значение пользователя
+            boosters_dict = dict()
+            for booster in Booster.objects.all():
+                boosters_dict[booster.string_id] = request.data.get(booster.string_id.lower(), user.boosters[booster.string_id])
+
+            # сохраняем новые данные бустеров у пользователя
+            user.boosters = boosters_dict
+            user.save()
+
+            serializer = UserDataSerializer(instance=user, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as ex:
+            return Response({"error": f"{ex}"}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary='Список всех бустеров',
+        description='Возвращает список всех бустеров. Для запроса ничего передавать не надо',
+    )
+)
 class BoostersList(generics.ListAPIView):
     ''' Список всех бустеров '''
 
-    queryset = Booster.objects.all().order_by('type')
+    queryset = Booster.objects.all().order_by('string_id')
     serializer_class = BoostersListSerializer
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary='Список всех персонажей',
+        description='Возвращает список всех персонажей. Для запроса ничего передавать не надо',
+    )
+)
 class CharactersList(generics.ListAPIView):
     ''' Список всех персонажей '''
 

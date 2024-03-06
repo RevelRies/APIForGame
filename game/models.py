@@ -6,8 +6,11 @@ load_dotenv()
 
 from datetime import timedelta
 
+from jsonschema import validate, ValidationError as JSONSchemaValidationError
+
 from django.db import models
 from django.utils import timezone
+from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.contrib.auth.models import AbstractUser, UserManager
 
@@ -64,6 +67,19 @@ class CustomUserManager(UserManager):
 
 
 class User(AbstractUser):
+    def validate_json_keys(value):
+        '''
+        Функция добавляет проверку для ключей поля boosters
+        Ключи могут содержать только string_id существующих бустеров
+        '''
+        allowed_keys = list()
+
+        for booster in Booster.objects.all():
+            allowed_keys.append(booster.string_id)
+
+        if not set(value.keys()).issubset(allowed_keys):
+            raise ValidationError("В JSON могут быть только string_id существующих бустеров")
+
     email = models.EmailField(unique=True, verbose_name='логин')
     score = models.IntegerField(default=0, verbose_name='текущие очки для сериализатора')
     all_time_score = models.IntegerField(default=0, verbose_name='количество очков за все время')
@@ -71,7 +87,7 @@ class User(AbstractUser):
     coins = models.IntegerField(default=0, verbose_name='количество монет')
     deaths = models.IntegerField(default=0, verbose_name='количества смертей')
     obstacle_collisions = models.IntegerField(default=0, verbose_name='количества столкновений')
-    boosters = models.JSONField(default={'Invincibility': 0, 'Speed': 0, 'Magnet': 0}, verbose_name='бустеры', blank=True)
+    boosters = models.JSONField(default=dict(), verbose_name='бустеры', blank=True, validators=[validate_json_keys])
     selected_character = models.CharField(default='DefaultCharacter', max_length=250, verbose_name='выбранный персонаж')
     unlocked_characters = models.JSONField(default=['DefaultCharacter', 'Girl'], verbose_name='персонажи пользователя', blank=True)
 
@@ -88,6 +104,19 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"Профиль пользователя {self.username}"
+
+    def clean(self):
+        # функция переопределяется для проверки поля boosters у User
+        # значение любого ключа в этом поле должно быть int
+        super().clean()
+        schema = {
+            "type": "object",
+            "additionalProperties": {"type": "integer"}
+        }
+        try:
+            validate(instance=self.boosters, schema=schema)
+        except JSONSchemaValidationError as e:
+            raise ValidationError(f"Неверный формат JSON: {e.message}")
 
 
 class Season(models.Model):
@@ -125,7 +154,7 @@ class Character(models.Model):
     name = models.CharField(max_length=250, verbose_name='имя')
     description = models.CharField(max_length=500, verbose_name='описание')
     price = models.IntegerField(verbose_name='цена')
-    game_over_messages = models.JSONField(verbose_name='game_over_messages', blank=True)
+    game_over_messages = models.JSONField(default='', verbose_name='game_over_messages', blank=True)
 
     class Meta:
         verbose_name = 'Персонаж'
@@ -136,19 +165,15 @@ class Character(models.Model):
 
 
 class Booster(models.Model):
-    class Type(models.TextChoices):
-        INVINCIBILITY = 'Invincibility'
-        SPEED = 'Speed'
-        MAGNET = 'Magnet'
-
+    string_id = models.CharField(max_length=250, verbose_name='frontend type')
     name = models.CharField(max_length=250, verbose_name='название')
     description = models.CharField(max_length=500, verbose_name='описание')
-    type = models.CharField(max_length=50, choices=Type.choices)
     price = models.IntegerField(verbose_name='цена')
 
+    # default = {Invincibility  Speed  Magnet}
     class Meta:
         verbose_name = 'Бустер'
         verbose_name_plural = 'Бустеры'
 
     def __str__(self):
-        return f"{self.type}"
+        return f"{self.string_id}"
