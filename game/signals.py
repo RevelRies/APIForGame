@@ -1,6 +1,6 @@
 
 from django.utils import timezone
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 
 from .models import User, Season, UserSeasonScore, Booster
@@ -60,3 +60,14 @@ def create_new_user_season_score(sender, instance, created, **kwargs):
         for user in User.objects.all():
             user.boosters[instance.string_id] = 0
             user.save()
+
+
+@receiver(post_delete, sender=Booster)
+def delete_booster_from_user(sender, instance, **kwargs):
+    '''
+    При удалении бустера у всех пользователей этот бустер удаляется из модели
+    '''
+
+    for user in User.objects.all():
+        del user.boosters[instance.string_id]
+        user.save()
