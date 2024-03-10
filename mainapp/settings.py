@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'social_django',
     'rest_framework_simplejwt.token_blacklist',
+    'django_jsonform',
 ]
 
 MIDDLEWARE = [

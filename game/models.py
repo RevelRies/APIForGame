@@ -8,6 +8,8 @@ from datetime import timedelta
 
 from jsonschema import validate, ValidationError as JSONSchemaValidationError
 
+from django_jsonform.models.fields import JSONField
+
 from django.db import models
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -67,7 +69,7 @@ class CustomUserManager(UserManager):
 
 
 class User(AbstractUser):
-    def validate_json_keys(value):
+    def validate_boosters(value):
         '''
         Функция добавляет проверку для ключей поля boosters
         Ключи могут содержать только string_id существующих бустеров
@@ -77,8 +79,21 @@ class User(AbstractUser):
         for booster in Booster.objects.all():
             allowed_keys.append(booster.string_id)
 
-        if not set(value.keys()).issubset(allowed_keys):
-            raise ValidationError("В JSON могут быть только string_id существующих бустеров")
+        if set(value.keys()) != set(allowed_keys):
+            raise ValidationError("В JSON должны быть все string_id существующих бустеров")
+
+    def validate_characters(value):
+        '''
+        Функция добавляет проверку для персонажей пользователя
+        Список персонажей пользователя может содержать только созданных персонажей
+        '''
+        allowed_elements = list()
+
+        for character in Character.objects.all():
+            allowed_elements.append(character.string_id)
+
+        if not set(value).issubset(allowed_elements):
+            raise ValidationError("Значениями могут быть только существующие персонажи")
 
     email = models.EmailField(unique=True, verbose_name='логин')
     score = models.IntegerField(default=0, verbose_name='текущие очки для сериализатора')
@@ -87,12 +102,30 @@ class User(AbstractUser):
     coins = models.IntegerField(default=0, verbose_name='количество монет')
     deaths = models.IntegerField(default=0, verbose_name='количества смертей')
     obstacle_collisions = models.IntegerField(default=0, verbose_name='количества столкновений')
-    boosters = models.JSONField(default=dict(), verbose_name='бустеры', blank=True, validators=[validate_json_keys])
     selected_character = models.CharField(default='DefaultCharacter', max_length=250, verbose_name='выбранный персонаж')
-    unlocked_characters = models.JSONField(default=['DefaultCharacter', 'Girl'], verbose_name='персонажи пользователя', blank=True)
 
     # поле в котором хранится действительный refresh token
     refresh_token = models.CharField(default='None', max_length=500, verbose_name='действительный refresh token')
+
+    # определение схемы для юзерфрендли отображения в админ панели бустеров
+    LABELS_SCHEMA_CHARACTERS = {
+        'type': 'array',
+        'items': {
+            'type': 'string'
+        }
+    }
+    unlocked_characters = JSONField(default=['DefaultCharacter', 'Girl'], verbose_name='персонажи пользователя',
+                                    validators=[validate_characters], blank=True, schema=LABELS_SCHEMA_CHARACTERS)
+
+    # определение схемы для юзерфрендли отображения в админ панели бустеров
+    LABELS_SCHEMA_BOOSTERS = {
+        'type': 'dict',
+        "keys": {},
+        'addtionalProperties': True,
+        'additionalProperties': {'type': 'integer'}
+}
+    boosters = JSONField(default=dict(), verbose_name='бустеры', validators=[validate_boosters], blank=True,
+                         schema=LABELS_SCHEMA_BOOSTERS)
 
     # строка необходима для использования CustomUserManager в запросах
     objects = CustomUserManager()
@@ -157,7 +190,16 @@ class Character(models.Model):
     name = models.CharField(max_length=250, verbose_name='имя')
     description = models.CharField(max_length=500, verbose_name='описание')
     price = models.IntegerField(verbose_name='цена')
-    game_over_messages = models.JSONField(default=['message_1', 'message_2'], verbose_name='game_over_messages', blank=True)
+
+    # определение схемы для юзерфрендли отображения в админ панели game_over_messages
+    LABELS_SCHEMA_MESSAGES = {
+        'type': 'array',
+        'items': {
+            'type': 'string'
+        }
+    }
+    game_over_messages = JSONField(default=['message_1', 'message_2'], verbose_name='game_over_messages',
+                                          blank=True, schema=LABELS_SCHEMA_MESSAGES)
 
     class Meta:
         verbose_name = 'Персонаж'

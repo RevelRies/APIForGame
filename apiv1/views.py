@@ -28,3 +28,19 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
         return response
 
+
+class CustomTokenRefreshView(TokenRefreshView):
+    def post(self, request, *args, **kwargs):
+        # Выполняем стандартную логику получения токенов
+        response = super().post(request, *args, **kwargs)
+
+        try:
+            # получаю id пользователя из токена и записываю ему в поле действующий токен
+            token = RefreshToken(response.data.get('refresh'))
+            user = User.objects.get(pk=token.get('user_id'))
+            user.refresh_token = response.data.get('refresh')
+            user.save()
+        except Exception as ex:
+            return Response({"error": f"{ex}"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return response

@@ -11,19 +11,6 @@ from django.forms import widgets
 logger = logging.getLogger(__name__)
 
 
-class PrettyJSONWidget(widgets.Textarea):
-    def format_value(self, value):
-        try:
-            value = json.dumps(json.loads(value), indent=2, sort_keys=True)
-            # these lines will try to adjust size of TextArea to fit to content
-            row_lengths = [len(r) for r in value.split('\n')]
-            self.attrs['rows'] = min(max(len(row_lengths) + 2, 10), 30)
-            self.attrs['cols'] = min(max(max(row_lengths) + 2, 40), 120)
-            return value
-        except Exception as e:
-            logger.warning("Error while formatting JSON: {}".format(e))
-            return super(PrettyJSONWidget, self).format_value(value)
-
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     # пользователи будут автоматически сортироваться по username
@@ -31,12 +18,8 @@ class UserAdmin(admin.ModelAdmin):
     # определяет боковую панель с полями по которым можно включить фильтрацию
     list_filter = ['username', 'date_joined']
     # определяет поля которые не нужно отображать
-    exclude = ['refresh_token']
-
-
-    formfield_overrides = {
-        JSONField: {'widget': PrettyJSONWidget}
-    }
+    exclude = ['refresh_token', 'first_name', 'last_name', 'is_staff', 'is_active', 'date_joined', 'password',
+               'last_login', 'user_permissions', 'groups', 'is_superuser', 'score']
 
 
 @admin.register(UserSeasonScore)
@@ -44,19 +27,17 @@ class UserSeasonScoreAdmin(admin.ModelAdmin):
     # результаты будут сортироваться по номеру сезона и username
     ordering = ['-season__number', 'user__username']
 
+
 @admin.register(Season)
 class SeasonAdmin(admin.ModelAdmin):
     # сезоны будут автоматически сортироваться по number
     ordering = ['-number']
-    
+
+
 @admin.register(Character)
 class CharacterAdmin(admin.ModelAdmin):
     # сезоны будут автоматически сортироваться по number
     ordering = ['-name']
-
-    formfield_overrides = {
-        JSONField: {'widget': PrettyJSONWidget}
-    }
 
 
 @admin.register(Booster)

@@ -25,6 +25,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='user',
             name='boosters',
-            field=models.JSONField(blank=True, default={}, validators=[game.models.User.validate_json_keys], verbose_name='бустеры'),
+            field=models.JSONField(blank=True, default={}, validators=[game.models.User.validate_boosters], verbose_name='бустеры'),
         ),
     ]
