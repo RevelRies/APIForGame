@@ -30,6 +30,9 @@ class UserAdmin(admin.ModelAdmin):
     ordering = ['username']
     # определяет боковую панель с полями по которым можно включить фильтрацию
     list_filter = ['username', 'date_joined']
+    # определяет поля которые не нужно отображать
+    exclude = ['refresh_token']
+
 
     formfield_overrides = {
         JSONField: {'widget': PrettyJSONWidget}
@@ -50,6 +53,10 @@ class SeasonAdmin(admin.ModelAdmin):
 class CharacterAdmin(admin.ModelAdmin):
     # сезоны будут автоматически сортироваться по number
     ordering = ['-name']
+
+    formfield_overrides = {
+        JSONField: {'widget': PrettyJSONWidget}
+    }
 
 
 @admin.register(Booster)

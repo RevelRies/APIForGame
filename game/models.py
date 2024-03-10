@@ -91,6 +91,9 @@ class User(AbstractUser):
     selected_character = models.CharField(default='DefaultCharacter', max_length=250, verbose_name='выбранный персонаж')
     unlocked_characters = models.JSONField(default=['DefaultCharacter', 'Girl'], verbose_name='персонажи пользователя', blank=True)
 
+    # поле в котором хранится действительный refresh token
+    refresh_token = models.CharField(default='None', max_length=500, verbose_name='действительный refresh token')
+
     # строка необходима для использования CustomUserManager в запросах
     objects = CustomUserManager()
 
@@ -154,7 +157,7 @@ class Character(models.Model):
     name = models.CharField(max_length=250, verbose_name='имя')
     description = models.CharField(max_length=500, verbose_name='описание')
     price = models.IntegerField(verbose_name='цена')
-    game_over_messages = models.JSONField(default='', verbose_name='game_over_messages', blank=True)
+    game_over_messages = models.JSONField(default=['message_1', 'message_2'], verbose_name='game_over_messages', blank=True)
 
     class Meta:
         verbose_name = 'Персонаж'
