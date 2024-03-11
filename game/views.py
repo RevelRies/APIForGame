@@ -230,10 +230,7 @@ class UserLeaderboardCurrentSeasonPosition(generics.ListAPIView):
     def get_queryset(self):
         email = self.request.GET.get('email', None)
         count_around = int(self.request.GET.get('count_around', 3))
-        season = Season.objects.filter(
-            start_date__lte=timezone.now(),
-            finish_date__gte=timezone.now()
-        ).first()
+        season = Season.objects.get(is_active=True)
 
         # пробуем получить email из заголовков запроса
         if not email:
@@ -307,10 +304,7 @@ class SeasonTopLeaderboard(generics.ListAPIView):
         # получаем номер сезона из параметров запроса
         season_number = self.request.GET.get('season_number', None)
         if not season_number:
-            season_number = Season.objects.filter(
-                start_date__lte=timezone.now(),
-                finish_date__gte=timezone.now()
-            ).first().number
+            season_number = Season.objects.get(is_active=True).number
 
         # получаем количество топа игроков которых нужно вывести
         top_size = int(self.request.GET.get('top_size', 5))
@@ -321,7 +315,7 @@ class SeasonTopLeaderboard(generics.ListAPIView):
         except:
             return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
 
-        return UserSeasonScore.objects.filter(season=season.id).order_by('-season_high_score')[:top_size]
+        return UserSeasonScore.objects.filter(season=season).order_by('-season_high_score')[:top_size]
 
 
 @extend_schema_view(

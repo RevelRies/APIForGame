@@ -27,7 +27,8 @@ class UserDataSerializer(ModelSerializer):
     season_high_score = serializers.SerializerMethodField()
     class Meta:
         model = User
-        fields = ['email', 'username', 'all_time_score', 'all_time_high_score', 'season_high_score', 'coins', 'deaths', 'obstacle_collisions', 'boosters', 'selected_character', 'unlocked_characters']
+        fields = ['email', 'username', 'all_time_score', 'all_time_high_score', 'season_high_score', 'coins', 'deaths',
+                  'obstacle_collisions', 'boosters', 'selected_character', 'unlocked_characters']
         extra_kwargs = {'email': {'required': False},
                         'username': {'required': False}}
 
@@ -95,10 +96,7 @@ class SeasonTopLeaderboardSerializer(ModelSerializer):
     # Обернуто для миграций
     # После добавленеия поля is_active в Season модель почему-то из-за этих строк не выполняются миграции
     try:
-        season = Season.objects.filter(
-            start_date__lte=timezone.now(),
-            finish_date__gte=timezone.now()
-        ).first()
+        season = Season.objects.get(is_active=True)
     except:
         pass
 
@@ -109,7 +107,7 @@ class SeasonTopLeaderboardSerializer(ModelSerializer):
         fields = ['user', 'season_position']
 
     def get_season_position(self, user_season_score):
-        return get_user_position(user=user_season_score.user, season=self.season)
+        return get_user_position(user=user_season_score.user, season=user_season_score.season)
 
 
 class SeasonCurrentLeaderboardSerializer(ModelSerializer):
@@ -118,10 +116,7 @@ class SeasonCurrentLeaderboardSerializer(ModelSerializer):
     # Обернуто для миграций
     # После добавленеия поля is_active в Season модель почему-то из-за этих строк не выполняются миграции
     try:
-        season = Season.objects.filter(
-            start_date__lte=timezone.now(),
-            finish_date__gte=timezone.now()
-        ).first()
+        season = Season.objects.get(is_active=True)
     except:
         pass
 
@@ -131,7 +126,7 @@ class SeasonCurrentLeaderboardSerializer(ModelSerializer):
         fields = ['user', 'season_position']
 
     def get_season_position(self, user_season_score):
-        return get_user_position(user=user_season_score.user, season=self.season)
+        return get_user_position(user=user_season_score.user, season=user_season_score.season)
 
 
 class SeasonListSerializer(ModelSerializer):
