@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-from datetime import timedelta
+from datetime import datetime, timedelta, time
 
 from jsonschema import validate, ValidationError as JSONSchemaValidationError
 
@@ -159,12 +159,31 @@ class User(AbstractUser):
 class Season(models.Model):
     name = models.CharField(max_length=50, verbose_name='название сезона', blank=True)
     number = models.IntegerField(default=0, verbose_name='номер сезона')
-    start_date = models.DateTimeField(default=timezone.localtime(timezone.now()).replace(hour=0, minute=0, second=0),
-                                      verbose_name='время начала сезона')
-    finish_date = models.DateTimeField(default=(timezone.localtime(timezone.now()) + timedelta(days=60))
-                                       .replace(hour=23, minute=59, second=40), verbose_name='время окончания сезона')
+    start_date = models.DateField(default=timezone.localtime(timezone.now()),
+                                  verbose_name='дата начала сезона')
+    start_time = models.TimeField(default=datetime.strptime('00:00:00', '%H:%M:%S'),
+                                  verbose_name='время начала сезона')
+    finish_date = models.DateField(default=(timezone.localtime(timezone.now()) + timedelta(days=60)),
+                                   verbose_name='дата окончания сезона')
+    finish_time = models.TimeField(default=datetime.strptime('23:59:50', '%H:%M:%S'),
+                                   verbose_name='время окончания сезона')
     prize = models.CharField(max_length=250, blank=True, verbose_name='приз сезона')
     is_active = models.BooleanField(default=False, verbose_name='текущий сезон')
+
+    def save(self, *args, **kwargs):
+        # если это первый сезон, присваиваем ему #1
+        if not Season.objects.all().exists():
+            self.number = 1
+            self.is_active = True
+        # если не первый - присваиваем ему номер предыдущего и проверяем пересечение по времени с предыдущим
+        else:
+            # экземпляр предыдущего сезона
+            prev_season = Season.objects.all().last()
+            # новому сезону ставлю номер +1 от предыдущего
+            self.number = prev_season.number + 1
+            # новому сезону устанавливаю следующи день после окончания предыдущего
+            self.start_date = prev_season.finish_date + timedelta(days=1)
+        return super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = 'Сезон'

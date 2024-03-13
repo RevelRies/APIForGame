@@ -25,7 +25,7 @@ class Command(BaseCommand):
                 # берем текущее время (23:59), прибавляем к нему час, заменяем часы и минуты на нули
                 start_date = (timezone.localtime(timezone.now()) + timedelta(days=1)).replace(hour=0, minute=0, second=0)
                 # продолжительность предыдущего сезона в днях
-                length_prev_season = (prev_season.finish_date - prev_season.start_date).days
+                length_prev_season = (prev_season.finish_date - prev_season.start_date).days + 1
                 # прибавляем к текущему времени продолжительность предыдущего сезона
                 finish_date = ((timezone.localtime(timezone.now()) + timedelta(days=length_prev_season))
                                .replace(hour=23, minute=59, second=0))

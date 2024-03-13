@@ -1,75 +1,32 @@
+from datetime import timedelta
 
 from django.utils import timezone
-from django.db.models.signals import post_save, post_delete, pre_init
+from django.db.models.signals import post_save, post_delete, pre_save, post_init
 from django.dispatch import receiver
 
 from .models import User, Season, UserSeasonScore, Booster
 
 
-# @receiver(pre_init, sender=Season)
-# def checking_new_season_data(sender, **kwargs):
-#     '''
-#     Функция перед созданием нового сезона:
-#     - проверяет не пересекается ли сезон по времени с другими сезонами
-#     - выставлет начальное время 00:00, а конечное 23:59
-#     '''
-#     new_number = kwargs['number']
-#     new_start_date = kwargs['kwargs']['start_date']
-#     new_finish_date = kwargs['kwargs']['finish_date']
-#
-#     # проверка на пересечение дат с другими сезонами
-
-#     # если это создание не первого сезона
-#     if new_number == 1:
-#         raise Exception
-#
-#     # экземпляр предыдущего сезона
-#     prev_season = Season.objects.all().last()
-#
-#     # если начало создаваемого сезона пересекается с концом прошлого то сезон не создается
-#     if new_start_date <= prev_season.finish_date:
-#         raise Exception
-#
-#     # новому сезону ставлю номер +1 от предыдущего
-#     kwargs['kwargs']['number'] = prev_season.number + 1
-#
-#     # изменяю время начала и конца создаваемого сезона
-#     kwargs['kwargs']['start_date'] = new_start_date.replace(hour=0, minute=0, second=0)
-#     kwargs['kwargs']['finish_date'] = new_finish_date.replace(hour=23, minute=59, second=40)
-
-
-@receiver(post_save, sender=Season)
-def checking_season_data(sender, instance, **kwargs):
+@receiver(pre_save, sender=Season)
+def checking_existing_season_data(sender, instance, **kwargs):
     '''
-    Функция перед сохранением сезона|созданием нового:
-    - проверяет не пересекается ли сезон по времени с другими сезонами
-    - выставлет начальное время 00:00, а конечное 23:59
+    Функция перед сохранением сезона проверяет не пересекается ли сезон по времени с другими сезонами
     '''
 
-    new_start_date = instance.start_date
-    new_finish_date = instance.finish_date
+    # редактирование существующего сезона
+    last_season_number = Season.objects.all().last().number
 
-    # проверка на пересечение дат с другими сезонами
-
-    # если это первый сезон, присваиваем ему #1
-    if not Season.objects.all().exists():
-        instance.number = 1
-        instance.is_active = True
-    else:
-        # экземпляр предыдущего сезона
-        prev_season = Season.objects.all().last()
-
-        # новому сезону ставлю номер +1 от предыдущего
-        instance.number = prev_season.number + 1
-
-        # если начало создаваемого сезона пересекается с концом прошлого то сезон не создается
-        if new_start_date <= prev_season.finish_date:
-            raise Exception
-
-    # изменяю время начала и конца создаваемого сезона
-    instance.start_date = new_start_date.replace(hour=0, minute=0, second=0)
-    instance.new_finish_date = new_finish_date.replace(hour=23, minute=59, second=40)
-
+    # если это первый сезон - проверяем чтобы дата конца была до начала 2 сезона
+    if instance.number == 1 and last_season_number != 1:
+        instance.finish_date = Season.objects.get(number=2).start_date - timedelta(days=1)
+    # если это сезон, который находится между двумя - проверяем чтобы дата начала не совпадала с датой конца
+    # предыдущего сезона и дата конца не совпадала с датой начала следующего сезона
+    elif last_season_number != instance.number:
+        instance.start_date = Season.objects.get(number=instance.number - 1).finish_date + timedelta(days=1)
+        instance.finish_date = Season.objects.get(number=instance.number + 1).start_date - timedelta(days=1)
+    # если это последний сезон - проверяем чтобы дата начала не совпадала с датой конца предыдущего сезона
+    elif last_season_number == instance.number:
+        instance.start_date = Season.objects.get(number=instance.number - 1).finish_date + timedelta(days=1)
 
 
 @receiver(post_save, sender=Season)
