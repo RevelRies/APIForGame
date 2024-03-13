@@ -4,5 +4,5 @@ from pytz import timezone
 
 def start():
     scheduler = BackgroundScheduler(timezone=timezone('Europe/Moscow'))
-    scheduler.add_job(call_command, 'cron', hour=23, minute=58, args=['add_new_season'])
+    scheduler.add_job(call_command, 'cron', hour=23, minute=59, args=['add_new_season'])
     scheduler.start()

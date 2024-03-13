@@ -22,13 +22,13 @@ class Command(BaseCommand):
             if Season.objects.get(is_active=True) == Season.objects.all().last():
                 number = prev_season.number + 1
                 name = f"season_{number}"
-                # берем текущее время (23:58), прибавляем к нему час, заменяем часы и минуты на нули
+                # берем текущее время (23:59), прибавляем к нему час, заменяем часы и минуты на нули
                 start_date = (timezone.localtime(timezone.now()) + timedelta(days=1)).replace(hour=0, minute=0, second=0)
                 # продолжительность предыдущего сезона в днях
                 length_prev_season = (prev_season.finish_date - prev_season.start_date).days
                 # прибавляем к текущему времени продолжительность предыдущего сезона
                 finish_date = ((timezone.localtime(timezone.now()) + timedelta(days=length_prev_season))
-                               .replace(hour=23, minute=58, second=0))
+                               .replace(hour=23, minute=59, second=0))
     
                 # создаем новый сезон
                 Season.objects.create(name=name, number=number, start_date=start_date, finish_date=finish_date,

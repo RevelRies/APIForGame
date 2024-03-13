@@ -32,6 +32,8 @@ class UserSeasonScoreAdmin(admin.ModelAdmin):
 class SeasonAdmin(admin.ModelAdmin):
     # сезоны будут автоматически сортироваться по number
     ordering = ['-number']
+    # поля только для чтения
+    readonly_fields = ['number', 'is_active']
 
 
 @admin.register(Character)

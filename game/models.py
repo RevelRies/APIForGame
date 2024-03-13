@@ -37,7 +37,8 @@ class CustomUserManager(UserManager):
         ''' Переопределение функции чтобы, убрать обязательный ввод username '''
         email = self._get_email(email)
 
-        # # если пользователь входил через сторонние сервисы (Google или Apple), то ему устанавливается username указанный в его профиле сервиса
+        # если пользователь входил через сторонние сервисы (Google или Apple), то ему устанавливается username
+        # указанный в его профиле сервиса
         if not username:
             username = self._generate_username()
 
@@ -157,9 +158,11 @@ class User(AbstractUser):
 
 class Season(models.Model):
     name = models.CharField(max_length=50, verbose_name='название сезона', blank=True)
-    number = models.IntegerField(verbose_name='номер сезона')
-    start_date = models.DateTimeField(default=timezone.localtime(timezone.now()), verbose_name='время начала сезона')
-    finish_date = models.DateTimeField(default=timezone.localtime(timezone.now()) + timedelta(days=60), verbose_name='время окончания сезона')
+    number = models.IntegerField(default=0, verbose_name='номер сезона')
+    start_date = models.DateTimeField(default=timezone.localtime(timezone.now()).replace(hour=0, minute=0, second=0),
+                                      verbose_name='время начала сезона')
+    finish_date = models.DateTimeField(default=(timezone.localtime(timezone.now()) + timedelta(days=60))
+                                       .replace(hour=23, minute=59, second=40), verbose_name='время окончания сезона')
     prize = models.CharField(max_length=250, blank=True, verbose_name='приз сезона')
     is_active = models.BooleanField(default=False, verbose_name='текущий сезон')
 
