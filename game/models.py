@@ -18,6 +18,9 @@ from django.contrib.auth.models import AbstractUser, UserManager
 
 
 
+def get_season():
+    return Season
+
 class CustomUserManager(UserManager):
     '''
     Переопределяем стандартный UserManager для того чтобы, сделать поле username не обязательным для ввода
@@ -170,20 +173,6 @@ class Season(models.Model):
     prize = models.CharField(max_length=250, blank=True, verbose_name='приз сезона')
     is_active = models.BooleanField(default=False, verbose_name='текущий сезон')
 
-    def save(self, *args, **kwargs):
-        # если это первый сезон, присваиваем ему #1
-        if not Season.objects.all().exists():
-            self.number = 1
-            self.is_active = True
-        # если не первый - присваиваем ему номер предыдущего и проверяем пересечение по времени с предыдущим
-        else:
-            # экземпляр предыдущего сезона
-            prev_season = Season.objects.all().last()
-            # новому сезону ставлю номер +1 от предыдущего
-            self.number = prev_season.number + 1
-            # новому сезону устанавливаю следующи день после окончания предыдущего
-            self.start_date = prev_season.finish_date + timedelta(days=1)
-        return super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = 'Сезон'

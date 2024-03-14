@@ -41,6 +41,13 @@ class SeasonAdmin(admin.ModelAdmin):
     finish_time_seconds.admin_order_field = 'timefield'
     finish_time_seconds.short_description = 'время окончания сезона'
 
+    def season_name(self, obj):
+        return f"{obj.number} Сезон"
+    season_name.admin_order_field = 'string'
+    season_name.short_description = 'Сезон'
+
+    # определяет какие поля отображать в главном меню сезонов
+    list_display = ['season_name', 'is_active', 'start_date', 'finish_date']
     # определяет поля которые не нужно отображать
     exclude = ['start_time', 'finish_time']
     # сезоны будут автоматически сортироваться по number
