@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from django.utils import timezone
-from django.db.models.signals import post_save, post_delete, pre_save, post_init
+from django.db.models.signals import post_save, post_delete, pre_save
 from django.dispatch import receiver
 
 from .models import User, Season, UserSeasonScore, Booster

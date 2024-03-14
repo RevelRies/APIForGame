@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import UserSeasonScore, User, Season, Character, Booster
+from .validator_forms import SeasonValidationForm
 
 import json
 import logging
@@ -28,6 +29,9 @@ class UserSeasonScoreAdmin(admin.ModelAdmin):
     ordering = ['-season__number', 'user__username']
 
 
+
+
+
 @admin.register(Season)
 class SeasonAdmin(admin.ModelAdmin):
     # функции добавлены для изменения отображения времени в админке
@@ -46,6 +50,7 @@ class SeasonAdmin(admin.ModelAdmin):
     season_name.admin_order_field = 'string'
     season_name.short_description = 'Сезон'
 
+    form = SeasonValidationForm
     # определяет какие поля отображать в главном меню сезонов
     list_display = ['season_name', 'is_active', 'start_date', 'finish_date']
     # определяет поля которые не нужно отображать
