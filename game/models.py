@@ -72,6 +72,21 @@ class CustomUserManager(UserManager):
         return self._create_user(email, password, username=None, **extra_fields)
 
 
+class Rank(models.Model):
+    name = models.CharField(max_length=50, verbose_name='название')
+    number = models.IntegerField(verbose_name='ранг по счету')
+    image = models.ImageField(upload_to='ranks_images', verbose_name='изображение')
+    min_int_users = models.IntegerField(verbose_name='минимальное количество пользователей (целое число)')
+    min_percent_users = models.IntegerField(verbose_name='минимальное количество пользователей (проценты)')
+
+    class Meta:
+        verbose_name = 'Ранг'
+        verbose_name_plural = 'Ранги'
+
+    def __str__(self):
+        return f"{self.name}"
+
+
 class User(AbstractUser):
     def validate_boosters(value):
         '''
@@ -107,6 +122,7 @@ class User(AbstractUser):
     deaths = models.IntegerField(default=0, verbose_name='количества смертей')
     obstacle_collisions = models.IntegerField(default=0, verbose_name='количества столкновений')
     selected_character = models.CharField(default='DefaultCharacter', max_length=250, verbose_name='выбранный персонаж')
+    rank = models.ForeignKey(to=Rank, on_delete=models.CASCADE, blank=True, null=True, verbose_name='ранг')
 
     # поле в котором хранится действительный refresh token
     refresh_token = models.CharField(default='None', max_length=500, verbose_name='действительный refresh token')
@@ -139,8 +155,8 @@ class User(AbstractUser):
     REQUIRED_FIELDS = []
 
     class Meta(AbstractUser.Meta):
-        verbose_name = 'Профиль пользователя'
-        verbose_name_plural = 'Профили пользователей'
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
 
     def __str__(self):
         return f"Профиль пользователя {self.username}"
@@ -226,7 +242,6 @@ class Booster(models.Model):
     description = models.CharField(max_length=500, verbose_name='описание')
     price = models.IntegerField(verbose_name='цена')
 
-    # default = {Invincibility  Speed  Magnet}
     class Meta:
         verbose_name = 'Бустер'
         verbose_name_plural = 'Бустеры'

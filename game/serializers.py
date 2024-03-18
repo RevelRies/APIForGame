@@ -33,7 +33,8 @@ class UserDataSerializer(ModelSerializer):
                         'username': {'required': False}}
 
     def get_season_high_score(self, user):
-        user_season_score = UserSeasonScore.objects.filter(user=user).last()
+        current_season = Season.objects.get(is_active=True)
+        user_season_score = UserSeasonScore.objects.get(user=user, season=current_season)
         return user_season_score.season_high_score
 
 
@@ -46,7 +47,8 @@ class SaveUserDataSerializer(ModelSerializer):
         extra_kwargs = {'username': {'required': False}}
 
     def get_season_high_score(self, user):
-        user_season_score = UserSeasonScore.objects.filter(user=user).last()
+        current_season = Season.objects.get(is_active=True)
+        user_season_score = UserSeasonScore.objects.get(user=user, season=current_season)
         return user_season_score.season_high_score
 
     def to_representation(self, obj):
@@ -69,8 +71,7 @@ class SaveUserDataSerializer(ModelSerializer):
 
         # поиск в БД текущего сезона
         all_time_high_score = instance.all_time_high_score
-        now = timezone.now()
-        current_season = Season.objects.get(start_date__lte=now, finish_date__gte=now)
+        current_season = Season.objects.get(is_active=True)
         user_season_score = UserSeasonScore.objects.get(user=instance, season=current_season)
 
         # обновление общих очков пользователя за все время

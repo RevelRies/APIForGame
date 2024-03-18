@@ -13,6 +13,8 @@ from .views import (UserDataView,
                     EditBooster)
 
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 
 
 urlpatterns = [
@@ -29,6 +31,6 @@ urlpatterns = [
     path('user_data/', UserDataView.as_view(), name='user_data'),
     path('user_leaderboard_all_season/', UserLeaderboardAllSeasonPosition.as_view(), name='user_leaderboard_all_season'),
     path('user_leaderboard_current_season/', UserLeaderboardCurrentSeasonPosition.as_view(), name='user_leaderboard_current_season'),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 app_name = 'game'

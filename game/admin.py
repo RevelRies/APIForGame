@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import UserSeasonScore, User, Season, Character, Booster
+from .models import UserSeasonScore, User, Season, Character, Booster, Rank
 from .validator_forms import SeasonValidationForm
 
 import json
@@ -71,3 +71,8 @@ class CharacterAdmin(admin.ModelAdmin):
 class BoosterAdmin(admin.ModelAdmin):
     # сезоны будут автоматически сортироваться по number
     ordering = ['-name']
+
+
+@admin.register(Rank)
+class RankAdmin(admin.ModelAdmin):
+    ordering = ['number']

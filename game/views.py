@@ -2,6 +2,7 @@ from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
 
 from .models import User, Season, UserSeasonScore, Booster, Character
+from .additional_functions import get_user_position, editing_ranks
 from .serializers import (UserDataSerializer,
                           SaveUserDataSerializer,
                           SeasonTopLeaderboardSerializer,
@@ -23,24 +24,6 @@ from rest_framework.request import Request
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-
-def get_user_position(user: User, season: Season):
-    '''
-    Получаем позицию пользователя в сезоне в соответствии с его season_high_score
-    '''
-    current_user_season_score = UserSeasonScore.objects.get(season=season, user=user)
-
-    # получаем словарь из объектов QuerySet
-    # фильтрация происходит в таком порядке
-    # 1 - QS текущего сезона
-    # 2 - фильтруем по убыванию season_high_score
-    # 3 - QS у которых season_high_score больше либо равен season_high_score данного пользователя
-    # 4 - фильтруем по username пользователей
-    user_season_score_qs = (UserSeasonScore.objects.
-                            filter(season=season).
-                            order_by("-season_high_score"))
-
-    return list(user_season_score_qs.values_list('id', flat=True)).index(current_user_season_score.id) + 1
 
 class UserDataView(APIView):
     '''
@@ -99,7 +82,7 @@ class SaveUserDataView(APIView):
     '''
 
     # указывает что запрос могут сделать только авторизованные пользователи
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
 
     @extend_schema(
         request=inline_serializer(
@@ -144,6 +127,7 @@ class SaveUserDataView(APIView):
 
         serializer = SaveUserDataSerializer(data=request.data, instance=instance)
         if serializer.is_valid():
+            editing_ranks()
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
