@@ -73,7 +73,6 @@ def editing_ranks():
             try:
                 uss = next(uss_iterator)
                 uss.user.rank = rank
-                print(f"{uss.user.username} - {uss.user.rank}")
                 uss.user.save()
             except:
                 pass

@@ -248,3 +248,8 @@ class Booster(models.Model):
 
     def __str__(self):
         return f"{self.string_id}"
+
+
+# class Prize(models.Model):
+#     season = models.ForeignKey(to=Season, on_delete=models.CASCADE, verbose_name='сезон')
+#     rank = models.OneToOneField(to=Rank, on_delete=models.CASCADE, verbose_name='ранг')
