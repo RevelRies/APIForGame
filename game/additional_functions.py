@@ -25,61 +25,71 @@ def editing_ranks():
     При вызове, пользователи редактируются ранги игры в части напосления пользователями
     '''
 
-    def get_quantity_by_percentage(percent, num):
-        return round((num / 100) * percent)
+    def get_quantity_by_percentage(quantity_users, rank):
+        # сумма процентов предыдущих рангов
+        if rank.number != 1:
+            minus_percent = Rank.objects.get(number=rank.number - 1).min_percent_users
+        else:
+            minus_percent = 0
+
+        # минимум людей, который должен быть в этом ранге (по процентам)
+        percent = rank.min_percent_users - minus_percent
+        return round((quantity_users / 100) * percent)
+
 
     all_user_season_scores = (UserSeasonScore.objects.
                               filter(season=Season.objects.get(is_active=True)).
                               order_by("-season_high_score"))
-
+    all_ranks = Rank.objects.all()
 
     quantity_users = len(all_user_season_scores)
 
+    # если хоть в одном ранге недобор по количеству пользователей в %, то во всех рангах испольхуем ограничение по кол-ву
+    is_percent_limit = True
+    # в списке каждое число означает сколько пользователей (по процентам) должно быть в ранге. индекс 0 == ранк 1 и т.д.
+    quantity_users_in_ranks = []
+    for rank in all_ranks:
+        num = get_quantity_by_percentage(quantity_users, rank)
+        if num < rank.min_int_users:
+            is_percent_limit = False
+            break
+        quantity_users_in_ranks.append(num)
 
-    # вычисляем количество пользователей для каждого ранга
-    # 1 Ранг
-    rank_1 = Rank.objects.get(number=1)
-    users_quantity_rank_1 = max(rank_1.min_int_users,
-                                get_quantity_by_percentage(rank_1.min_percent_users, quantity_users))
-    # 2 Ранг
-    rank_2 = Rank.objects.get(number=2)
-    users_quantity_rank_2 = max(rank_2.min_int_users,
-                                get_quantity_by_percentage(rank_2.min_percent_users, quantity_users))
-    # 3 Ранг
-    rank_3 = Rank.objects.get(number=3)
-    users_quantity_rank_3 = max(rank_3.min_int_users,
-                                get_quantity_by_percentage(rank_3.min_percent_users, quantity_users))
+    # если рапределяем не по процентам, то написываем в список сколько пользователей должн быть по int ограничению
+    if not is_percent_limit:
+        quantity_users_in_ranks.clear()
+        for rank in all_ranks:
+            quantity_users_in_ranks.append(rank.min_int_users)
 
-    # делаем итератор из user_season_scores
+    # распределение пользователей по рангам
     uss_iterator = iter(all_user_season_scores)
 
-    # засовываем нужное количество пользователей в ранг 1
-    for _ in range(users_quantity_rank_1):
+    # берем каждый ранг
+    for rank_number in range(1, len(quantity_users_in_ranks) + 1):
+        rank = Rank.objects.get(number=rank_number)
+
+        # берем количество пользователей из списка и засовываем в текущий ранг
+        for _ in range(quantity_users_in_ranks[rank_number - 1]):
+            try:
+                uss = next(uss_iterator)
+                uss.user.rank = rank
+                print(f"{uss.user.username} - {uss.user.rank}")
+                uss.user.save()
+            except:
+                pass
+
+    # оставшихся пользователей оставляем бех ранга
+    while 1:
         try:
-            user_season_score = next(uss_iterator)
-            print(user_season_score.user.username)
-            user_season_score.user.rank = rank_1
-            user_season_score.user.save()
+            uss = next(uss_iterator)
+            uss.user.rank = None
+            print(f"{uss.user.username} - {uss.user.rank}")
+            uss.user.save()
         except:
             break
 
-    # засовываем нужное количество пользователей в ранг 2
-    for _ in range(users_quantity_rank_2):
-        try:
-            user_season_score = next(uss_iterator)
-            user_season_score.user.rank = rank_2
-            user_season_score.user.save()
-        except:
-            break
 
-    # засовываем нужное количество пользователей в ранг 3
-    for _ in range(users_quantity_rank_3):
-        try:
-            user_season_score = next(uss_iterator)
-            user_season_score.user.rank = rank_3
-            user_season_score.user.save()
-        except:
-            break
+
 
 
 

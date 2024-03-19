@@ -25,10 +25,11 @@ def get_user_position(user: User, season: Season):
 
 class UserDataSerializer(ModelSerializer):
     season_high_score = serializers.SerializerMethodField()
+    rank_number = serializers.SerializerMethodField()
     class Meta:
         model = User
         fields = ['email', 'username', 'all_time_score', 'all_time_high_score', 'season_high_score', 'coins', 'deaths',
-                  'obstacle_collisions', 'boosters', 'selected_character', 'unlocked_characters']
+                  'obstacle_collisions', 'boosters', 'selected_character', 'unlocked_characters', 'rank_number']
         extra_kwargs = {'email': {'required': False},
                         'username': {'required': False}}
 
@@ -36,6 +37,12 @@ class UserDataSerializer(ModelSerializer):
         current_season = Season.objects.get(is_active=True)
         user_season_score = UserSeasonScore.objects.get(user=user, season=current_season)
         return user_season_score.season_high_score
+
+    def get_rank_number(self, user):
+        try:
+            return user.rank.number
+        except:
+            return user.rank
 
 
 class SaveUserDataSerializer(ModelSerializer):
