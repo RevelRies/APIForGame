@@ -27,6 +27,14 @@ class SeasonValidationForm(forms.ModelForm):
         if sorted(ranks_id_list) != sorted(ranks_id_checklist):
             raise forms.ValidationError('В сезоне для каждого ранга должны быть законфигурированны призы')
 
+        # проверяем чтобы для каждого игрока в топ 3 был добавлен отдельный приз
+        prizetop3_top_number_list = list()
+        for indx in range(3):
+            top_number = data[f"prizetop3_set-{indx}-top_number"]
+            prizetop3_top_number_list.append(int(top_number))
+
+        if sorted(prizetop3_top_number_list) != [1, 2, 3]:
+            raise forms.ValidationError('В сезоне для каждого игрока из топ 3 должны быть законфигурированны призы')
 
         # # если это новый сезон
         # if not Season.objects.filter(number=data['number']).exists():

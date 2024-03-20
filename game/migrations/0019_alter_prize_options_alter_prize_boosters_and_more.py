@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='prize',
             name='boosters',
-            field=django_jsonform.models.fields.JSONField(blank=True, default={'Speed': 0}, validators=[game.models.Prize.validate_boosters], verbose_name='бустеры'),
+            field=django_jsonform.models.fields.JSONField(blank=True, default={'Speed': 0}, validators=[game.models.User.validate_boosters], verbose_name='бустеры'),
         ),
         migrations.AlterField(
             model_name='prize',

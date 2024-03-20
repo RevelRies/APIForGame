@@ -250,32 +250,6 @@ class Booster(models.Model):
 
 
 class Prize(models.Model):
-    def validate_boosters(value):
-        '''
-        Функция добавляет проверку для ключей поля boosters
-        Ключи могут содержать только string_id существующих бустеров
-        '''
-        allowed_keys = list()
-
-        for booster in Booster.objects.all():
-            allowed_keys.append(booster.string_id)
-
-        if set(value.keys()) != set(allowed_keys):
-            raise ValidationError("В JSON должны быть все string_id существующих бустеров")
-
-    def validate_characters(value):
-        '''
-        Функция добавляет проверку для персонажей пользователя
-        Список персонажей пользователя может содержать только созданных персонажей
-        '''
-        allowed_elements = list()
-
-        for character in Character.objects.all():
-            allowed_elements.append(character.string_id)
-
-        if not set(value).issubset(allowed_elements):
-            raise ValidationError("Значениями могут быть только существующие персонажи")
-
     season = models.ForeignKey(to=Season, on_delete=models.CASCADE, verbose_name='сезон')
     rank = models.ForeignKey(to=Rank, on_delete=models.CASCADE, verbose_name='ранг')
     coins = models.IntegerField(verbose_name='монеты')
@@ -288,7 +262,7 @@ class Prize(models.Model):
         }
     }
     characters = JSONField(default=list(), verbose_name='персонажи',
-                           validators=[validate_characters], blank=True, schema=LABELS_SCHEMA_CHARACTERS)
+                           validators=[User.validate_characters], blank=True, schema=LABELS_SCHEMA_CHARACTERS)
 
     # определение схемы для юзерфрендли отображения в админ панели бустеров
     LABELS_SCHEMA_BOOSTERS = {
@@ -303,7 +277,7 @@ class Prize(models.Model):
     for booster in Booster.objects.all():
         boosters_dict[booster.string_id] = 0
 
-    boosters = JSONField(default=boosters_dict, verbose_name='бустеры', validators=[validate_boosters], blank=True,
+    boosters = JSONField(default=boosters_dict, verbose_name='бустеры', validators=[User.validate_boosters], blank=True,
                          schema=LABELS_SCHEMA_BOOSTERS)
 
     class Meta:
@@ -312,3 +286,64 @@ class Prize(models.Model):
 
     def __str__(self):
         return f"{self.rank.name} - сезон № {self.season.number}"
+
+
+class PrizeTop3(models.Model):
+    CHOICES = (
+        (1, 1),
+        (2, 2),
+        (3, 3),
+    )
+
+    top_number = models.IntegerField(choices=CHOICES, verbose_name='место')
+    season = models.ForeignKey(to=Season, on_delete=models.CASCADE, verbose_name='сезон')
+    coins = models.IntegerField(verbose_name='монеты')
+
+    # определение схемы для юзерфрендли отображения в админ панели бустеров
+    LABELS_SCHEMA_CHARACTERS = {
+        'type': 'array',
+        'items': {
+            'type': 'string'
+        }
+    }
+    characters = JSONField(default=list(), verbose_name='персонажи',
+                           validators=[User.validate_characters], blank=True, schema=LABELS_SCHEMA_CHARACTERS)
+
+    # определение схемы для юзерфрендли отображения в админ панели бустеров
+    LABELS_SCHEMA_BOOSTERS = {
+        'type': 'dict',
+        "keys": {},
+        'addtionalProperties': True,
+        'additionalProperties': {'type': 'integer'}
+    }
+
+    # JSON с существующими бустерами
+    boosters_dict = dict()
+    for booster in Booster.objects.all():
+        boosters_dict[booster.string_id] = 0
+
+    boosters = JSONField(default=boosters_dict, verbose_name='бустеры', validators=[User.validate_boosters], blank=True,
+                         schema=LABELS_SCHEMA_BOOSTERS)
+
+    class Meta:
+        verbose_name = 'Приз для ТОП 3'
+        verbose_name_plural = 'Призы для ТОП 3'
+
+    def __str__(self):
+        return f"Cезон № {self.season.number} - {self.top_number} место"
+
+
+class SuperPrize(models.Model):
+    name = models.CharField(max_length=250, verbose_name='название')
+    image_preview = models.ImageField(upload_to='super_prize_images', verbose_name='превью картинка')
+    image_gift = models.ImageField(upload_to='super_prize_images', verbose_name='картинка подарка')
+    description = models.TextField(max_length=500, verbose_name='описание')
+    burns_down_date = models.DateField(verbose_name='дата когда сгорает приз')
+    season = models.ForeignKey(to=Season, on_delete=models.CASCADE, verbose_name='сезон')
+
+    class Meta:
+        verbose_name = 'Супер приз'
+        verbose_name_plural = 'Супер призы'
+
+    def __str__(self):
+        return f"Супер приз сезон № {self.season.number}"

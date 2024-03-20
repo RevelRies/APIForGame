@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import UserSeasonScore, User, Season, Character, Booster, Rank, Prize
+from .models import UserSeasonScore, User, Season, Character, Booster, Rank, Prize, PrizeTop3, SuperPrize
 from .validator_forms import SeasonValidationForm
 
 import json
@@ -39,6 +39,26 @@ class PrizesInline(admin.StackedInline):
     can_delete = False
 
 
+class PrizesTop3Inline(admin.StackedInline):
+    '''
+    Класс для создания призов внутри модели сезона
+    '''
+
+    model = PrizeTop3
+    max_num = 3
+    can_delete = False
+
+
+class SuperPrizeInline(admin.StackedInline):
+    '''
+    Класс для создания призов внутри модели сезона
+    '''
+
+    model = SuperPrize
+    max_num = 1
+    can_delete = False
+
+
 @admin.register(Season)
 class SeasonAdmin(admin.ModelAdmin):
     # функции добавлены для изменения отображения времени в админке
@@ -67,7 +87,7 @@ class SeasonAdmin(admin.ModelAdmin):
     # поля только для чтения
     readonly_fields = ['number', 'start_time_seconds', 'finish_time_seconds', 'is_active']
     #
-    inlines = [PrizesInline]
+    inlines = [PrizesInline, PrizesTop3Inline, SuperPrizeInline]
 
 
 @admin.register(Character)
@@ -86,7 +106,3 @@ class BoosterAdmin(admin.ModelAdmin):
 class RankAdmin(admin.ModelAdmin):
     ordering = ['number']
 
-
-@admin.register(Prize)
-class PrizeAdmin(admin.ModelAdmin):
-    ordering = ['-season__number', 'rank__number']

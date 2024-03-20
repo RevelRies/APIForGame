@@ -33,8 +33,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('coins', models.IntegerField(verbose_name='монеты')),
-                ('characters', django_jsonform.models.fields.JSONField(blank=True, default=[], validators=[game.models.Prize.validate_characters], verbose_name='персонажи')),
-                ('boosters', django_jsonform.models.fields.JSONField(blank=True, default={}, validators=[game.models.Prize.validate_boosters], verbose_name='бустеры')),
+                ('characters', django_jsonform.models.fields.JSONField(blank=True, default=[], validators=[game.models.User.validate_characters], verbose_name='персонажи')),
+                ('boosters', django_jsonform.models.fields.JSONField(blank=True, default={}, validators=[game.models.User.validate_boosters], verbose_name='бустеры')),
                 ('rank', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to='game.rank', verbose_name='ранг')),
                 ('season', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='game.season', verbose_name='сезон')),
             ],

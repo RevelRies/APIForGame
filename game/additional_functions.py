@@ -1,5 +1,7 @@
 from .models import User, Season, UserSeasonScore, Booster, Character, Rank
 
+from django.core.exceptions import ValidationError
+
 def get_user_position(user: User, season: Season):
     '''
     Получаем позицию пользователя в сезоне в соответствии с его season_high_score
