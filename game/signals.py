@@ -4,13 +4,14 @@ from django.utils import timezone
 from django.db.models.signals import post_save, post_delete, pre_save
 from django.dispatch import receiver
 
-from .models import User, Season, UserSeasonScore, Booster
+from .models import User, Season, UserSeasonScore, Booster, Prize, Rank
 
 
 @receiver(pre_save, sender=Season)
 def checking_existing_season_data(sender, instance, **kwargs):
     '''
     Функция перед сохранением сезона проверяет не пересекается ли сезон по времени с другими сезонами
+    + проверяет чтобы у каждого сезона при сохранении был создан приз для каждого ранга
     '''
 
     # если это новый сезон
@@ -60,6 +61,12 @@ def checking_existing_season_data(sender, instance, **kwargs):
         elif last_season_number == instance.number and last_season_number != 1:
             instance.start_date = Season.objects.get(number=instance.number - 1).finish_date + timedelta(days=1)
 
+    # # проверка создания всех призов для каждого ранга в сезоне
+    # for rank in Rank.objects.all():
+    #     if not Prize.objects.get(rank=rank, season=instance).exists():
+    #         raise
+
+
 
 @receiver(post_save, sender=Season)
 def create_user_season_score(sender, instance, created, **kwargs):
@@ -67,6 +74,7 @@ def create_user_season_score(sender, instance, created, **kwargs):
     Функция создает UserSeasonScore для каждого пользователя при создании нового сезона
     '''
     if created:
+        # создание UserSeasonScore
         for user in User.objects.all():
             UserSeasonScore.objects.create(user=user,
                                            season=instance)
@@ -83,10 +91,7 @@ def create_new_user_season_score(sender, instance, created, **kwargs):
     # Обернуто для миграций
     # После добавленеия поля is_active в Season модель почему-то из-за этих строк не выполняются миграции
     try:
-        current_season = Season.objects.filter(
-            start_date__lte=timezone.now(),
-            finish_date__gte=timezone.now()
-        ).first()
+        current_season = Season.objects.get(is_active=True)
     except:
         pass
 
@@ -110,7 +115,7 @@ def create_new_user_season_score(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Booster)
 def create_new_user_season_score(sender, instance, created, **kwargs):
     '''
-    При создании нового бустера он добавляется в поле boosters всех пользователей
+    При создании нового бустера он добавляется в поле boosters всех пользователей и призов
     '''
 
     if created:
@@ -118,13 +123,22 @@ def create_new_user_season_score(sender, instance, created, **kwargs):
             user.boosters[instance.string_id] = 0
             user.save()
 
+        for prize in Prize.objects.all():
+            prize.boosters[instance.string_id] = 0
+            prize.save()
 
 @receiver(post_delete, sender=Booster)
 def delete_booster_from_user(sender, instance, **kwargs):
     '''
-    При удалении бустера у всех пользователей этот бустер удаляется из модели
+    При удалении бустера у всех пользователей и призов этот бустер удаляется из модели
     '''
 
     for user in User.objects.all():
         del user.boosters[instance.string_id]
         user.save()
+
+    for prize in Prize.objects.all():
+        del prize.boosters[instance.string_id]
+        prize.save()
+
+

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import UserSeasonScore, User, Season, Character, Booster, Rank
+from .models import UserSeasonScore, User, Season, Character, Booster, Rank, Prize
 from .validator_forms import SeasonValidationForm
 
 import json
@@ -29,7 +29,14 @@ class UserSeasonScoreAdmin(admin.ModelAdmin):
     ordering = ['-season__number', 'user__username']
 
 
+class PrizesInline(admin.StackedInline):
+    '''
+    Класс для создания призов внутри модели сезона
+    '''
 
+    model = Prize
+    max_num = 3
+    can_delete = False
 
 
 @admin.register(Season)
@@ -59,6 +66,8 @@ class SeasonAdmin(admin.ModelAdmin):
     ordering = ['-number']
     # поля только для чтения
     readonly_fields = ['number', 'start_time_seconds', 'finish_time_seconds', 'is_active']
+    #
+    inlines = [PrizesInline]
 
 
 @admin.register(Character)
@@ -76,3 +85,8 @@ class BoosterAdmin(admin.ModelAdmin):
 @admin.register(Rank)
 class RankAdmin(admin.ModelAdmin):
     ordering = ['number']
+
+
+@admin.register(Prize)
+class PrizeAdmin(admin.ModelAdmin):
+    ordering = ['-season__number', 'rank__number']

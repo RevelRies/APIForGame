@@ -186,7 +186,6 @@ class Season(models.Model):
                                    verbose_name='дата окончания сезона')
     finish_time = models.TimeField(default=datetime.strptime('23:59:50', '%H:%M:%S'),
                                    verbose_name='время окончания сезона')
-    prize = models.CharField(max_length=250, blank=True, verbose_name='приз сезона')
     is_active = models.BooleanField(default=False, verbose_name='текущий сезон')
 
 
@@ -250,6 +249,66 @@ class Booster(models.Model):
         return f"{self.string_id}"
 
 
-# class Prize(models.Model):
-#     season = models.ForeignKey(to=Season, on_delete=models.CASCADE, verbose_name='сезон')
-#     rank = models.OneToOneField(to=Rank, on_delete=models.CASCADE, verbose_name='ранг')
+class Prize(models.Model):
+    def validate_boosters(value):
+        '''
+        Функция добавляет проверку для ключей поля boosters
+        Ключи могут содержать только string_id существующих бустеров
+        '''
+        allowed_keys = list()
+
+        for booster in Booster.objects.all():
+            allowed_keys.append(booster.string_id)
+
+        if set(value.keys()) != set(allowed_keys):
+            raise ValidationError("В JSON должны быть все string_id существующих бустеров")
+
+    def validate_characters(value):
+        '''
+        Функция добавляет проверку для персонажей пользователя
+        Список персонажей пользователя может содержать только созданных персонажей
+        '''
+        allowed_elements = list()
+
+        for character in Character.objects.all():
+            allowed_elements.append(character.string_id)
+
+        if not set(value).issubset(allowed_elements):
+            raise ValidationError("Значениями могут быть только существующие персонажи")
+
+    season = models.ForeignKey(to=Season, on_delete=models.CASCADE, verbose_name='сезон')
+    rank = models.ForeignKey(to=Rank, on_delete=models.CASCADE, verbose_name='ранг')
+    coins = models.IntegerField(verbose_name='монеты')
+
+    # определение схемы для юзерфрендли отображения в админ панели бустеров
+    LABELS_SCHEMA_CHARACTERS = {
+        'type': 'array',
+        'items': {
+            'type': 'string'
+        }
+    }
+    characters = JSONField(default=list(), verbose_name='персонажи',
+                           validators=[validate_characters], blank=True, schema=LABELS_SCHEMA_CHARACTERS)
+
+    # определение схемы для юзерфрендли отображения в админ панели бустеров
+    LABELS_SCHEMA_BOOSTERS = {
+        'type': 'dict',
+        "keys": {},
+        'addtionalProperties': True,
+        'additionalProperties': {'type': 'integer'}
+    }
+
+    # JSON с существующими бустерами
+    boosters_dict = dict()
+    for booster in Booster.objects.all():
+        boosters_dict[booster.string_id] = 0
+
+    boosters = JSONField(default=boosters_dict, verbose_name='бустеры', validators=[validate_boosters], blank=True,
+                         schema=LABELS_SCHEMA_BOOSTERS)
+
+    class Meta:
+        verbose_name = 'Приз'
+        verbose_name_plural = 'Призы'
+
+    def __str__(self):
+        return f"{self.rank.name} - сезон № {self.season.number}"

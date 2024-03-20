@@ -1,4 +1,4 @@
-from .models import Season
+from .models import Season, Rank
 
 from datetime import timedelta
 
@@ -8,8 +8,25 @@ from django.utils import timezone
 
 class SeasonValidationForm(forms.ModelForm):
     def clean(self):
-        data = self.cleaned_data
-        print(data)
+        # получаем значения из полей модели
+        data = self.data
+        ranks_qs = Rank.objects.all()
+        # составляем список id существующих рангов
+        ranks_id_list = [rank.pk for rank in ranks_qs]
+        ranks_id_checklist = list()
+
+        # записываем id рангов для которых пользователь создал призы
+        for indx in range(len(ranks_qs)):
+            try:
+                rank_id = data[f'prize_set-{indx}-rank']
+                ranks_id_checklist.append(int(rank_id))
+            except:
+                raise forms.ValidationError('В сезоне для каждого ранга должны быть законфигурированны призы')
+
+        # проверяется чтобы для каждого ранга в сезоне был создан приз
+        if sorted(ranks_id_list) != sorted(ranks_id_checklist):
+            raise forms.ValidationError('В сезоне для каждого ранга должны быть законфигурированны призы')
+
 
         # # если это новый сезон
         # if not Season.objects.filter(number=data['number']).exists():
