@@ -19,8 +19,15 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
             # если у пользователя есть на данный момент refresh token, то мы его добавляем в черный список
             if user_refresh_token != 'None':
-                token = RefreshToken(user_refresh_token)
-                token.blacklist()
+
+                # если токен не истек - добавляем его в черный список
+                try:
+                    token = RefreshToken(user_refresh_token)
+                    token.blacklist()
+                # если истек - ничего не делаем
+                except:
+                    pass
+
             user.refresh_token = response.data.get('refresh')
             user.save()
         except Exception as ex:

@@ -1,7 +1,7 @@
 from django.utils import timezone
 from django.core.exceptions import ObjectDoesNotExist
 
-from .models import User, Season, UserSeasonScore, Booster, Character
+from .models import User, Season, UserSeasonScore, Booster, Character, Rank, Prize, PrizeTop3, SuperPrize
 from .additional_functions import get_user_position, editing_ranks
 from .serializers import (UserDataSerializer,
                           SaveUserDataSerializer,
@@ -9,7 +9,11 @@ from .serializers import (UserDataSerializer,
                           SeasonCurrentLeaderboardSerializer,
                           SeasonListSerializer,
                           BoostersListSerializer,
-                          CharactersListSerializer,)
+                          CharactersListSerializer,
+                          RanksListSerializer,
+                          PrizeListSerializer,
+                          PrizeTop3ListSerializer,
+                          SuperPrizeViewSerializer)
 
 from drf_spectacular.utils import (extend_schema,
                                    extend_schema_view,
@@ -544,3 +548,32 @@ class CharactersList(generics.ListAPIView):
     queryset = Character.objects.all().order_by('string_id')
     serializer_class = CharactersListSerializer
 
+
+class RanksList(generics.ListAPIView):
+    ''' Список всех рангов '''
+
+    queryset = Rank.objects.all().order_by('number')
+    serializer_class = RanksListSerializer
+
+
+class PrizeList(generics.ListAPIView):
+    ''' Список призов по рангам '''
+
+    current_season = Season.objects.get(is_active=True)
+    queryset = Prize.objects.filter(season=current_season)
+    serializer_class = PrizeListSerializer
+
+class PrizeTop3List(generics.ListAPIView):
+    ''' Список призов топ 3 игроков '''
+
+    current_season = Season.objects.get(is_active=True)
+    queryset = PrizeTop3.objects.filter(season=current_season)
+    serializer_class = PrizeTop3ListSerializer
+
+
+class SuperPrizeView(generics.ListAPIView):
+    ''' Информация о супер призе '''
+
+    current_season = Season.objects.get(is_active=True)
+    queryset = SuperPrize.objects.filter(season=current_season)
+    serializer_class = SuperPrizeViewSerializer

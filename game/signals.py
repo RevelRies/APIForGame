@@ -1,10 +1,12 @@
+import os
 from datetime import timedelta
 
 from django.utils import timezone
-from django.db.models.signals import post_save, post_delete, pre_save
 from django.dispatch import receiver
+from django.db.models.signals import post_save, post_delete, pre_save
 
 from .models import User, Season, UserSeasonScore, Booster, Prize, Rank
+from .additional_functions import calculate_image_hash
 
 
 @receiver(pre_save, sender=Season)
@@ -140,5 +142,22 @@ def delete_booster_from_user(sender, instance, **kwargs):
     for prize in Prize.objects.all():
         del prize.boosters[instance.string_id]
         prize.save()
+
+
+@receiver(post_save, sender=Rank)
+def check_hash(sender, instance, created, **kwargs):
+    '''
+    Записывает хэш сохраненного изображения
+    '''
+
+    # вычисляем хэш загруженной картинки с сравниваем с хэшом в БД
+    image_hash_current = calculate_image_hash(instance)
+    image_hash_db = instance.image_hash
+
+    # если хэши отличаются - значит загружена новая картинка и мы записываем новый хэш и дату загрузки
+    if image_hash_current != image_hash_db:
+
+        Rank.objects.filter(id=instance.id).update(image_hash=image_hash_current,
+                                                   image_datetime=timezone.localtime(timezone.now()))
 
 

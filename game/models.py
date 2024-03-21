@@ -1,3 +1,4 @@
+import hashlib
 import uuid
 import os
 
@@ -76,6 +77,9 @@ class Rank(models.Model):
     name = models.CharField(max_length=50, verbose_name='название')
     number = models.IntegerField(verbose_name='ранг по счету')
     image = models.ImageField(upload_to='ranks_images', verbose_name='изображение')
+    image_hash = models.CharField(max_length=300, verbose_name='хэш изображения')
+    image_datetime = models.DateTimeField(default=timezone.localtime(timezone.now()),
+                                          verbose_name='когда загружена картинка')
     min_int_users = models.IntegerField(verbose_name='минимальное количество пользователей (целое число)')
     min_percent_users = models.IntegerField(verbose_name='минимальное количество пользователей (проценты)')
 

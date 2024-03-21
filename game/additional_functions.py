@@ -1,3 +1,5 @@
+import hashlib
+
 from .models import User, Season, UserSeasonScore, Booster, Character, Rank
 
 from django.core.exceptions import ValidationError
@@ -90,7 +92,17 @@ def editing_ranks():
             break
 
 
+def calculate_image_hash(instance):
+        sha256 = hashlib.sha256()
 
+        with open(instance.image.path, "rb") as f:
+            while True:
+                data = f.read(65536)  # arbitrary number to reduce RAM usage
+                if not data:
+                    break
+                sha256.update(data)
+
+        return sha256.hexdigest()
 
 
 

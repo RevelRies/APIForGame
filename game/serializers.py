@@ -1,4 +1,4 @@
-from .models import User, Season, UserSeasonScore, Booster, Character
+from .models import User, Season, UserSeasonScore, Booster, Character, Rank, Prize, PrizeTop3, SuperPrize
 
 from django.utils import timezone
 
@@ -140,21 +140,46 @@ class SeasonCurrentLeaderboardSerializer(ModelSerializer):
 class SeasonListSerializer(ModelSerializer):
     class Meta:
         model = Season
-        fields = '__all__'
+        exclude = ['id']
 
 
 class BoostersListSerializer(ModelSerializer):
     class Meta:
         model = Booster
-        fields = '__all__'
+        exclude = ['id']
 
 
 class CharactersListSerializer(ModelSerializer):
     class Meta:
         model = Character
-        fields = '__all__'
+        exclude = ['id']
 
 
+class RanksListSerializer(ModelSerializer):
+    class Meta:
+        model = Rank
+        exclude = ['id']
 
 
+class PrizeListSerializer(ModelSerializer):
+    season_number = serializers.IntegerField(read_only=True, source='season.number')
+    rank_number = serializers.IntegerField(read_only=True, source='rank.number')
 
+    class Meta:
+        model = Prize
+        fields = ['season_number', 'rank_number', 'coins', 'characters', 'boosters']
+
+
+class PrizeTop3ListSerializer(ModelSerializer):
+    season_number = serializers.IntegerField(read_only=True, source='season.number')
+    class Meta:
+        model = PrizeTop3
+        fields = ['season_number', 'top_number', 'coins', 'characters', 'boosters']
+
+
+class SuperPrizeViewSerializer(ModelSerializer):
+    season_number = serializers.IntegerField(read_only=True, source='season.number')
+
+    class Meta:
+        model = SuperPrize
+        fields = ['season_number', 'name', 'image_preview', 'image_gift', 'description', 'burns_down_date']
