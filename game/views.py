@@ -549,6 +549,12 @@ class CharactersList(generics.ListAPIView):
     serializer_class = CharactersListSerializer
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary='Список всех рангов',
+        description='Возвращает список всех рангов. Для запроса ничего передавать не надо',
+    )
+)
 class RanksList(generics.ListAPIView):
     ''' Список всех рангов '''
 
@@ -556,6 +562,12 @@ class RanksList(generics.ListAPIView):
     serializer_class = RanksListSerializer
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary='Список призов по рангам',
+        description='Возвращает список обычных призов для каждого ранга. Для запроса ничего передавать не надо',
+    )
+)
 class PrizeList(generics.ListAPIView):
     ''' Список призов по рангам '''
 
@@ -563,6 +575,13 @@ class PrizeList(generics.ListAPIView):
     queryset = Prize.objects.filter(season=current_season)
     serializer_class = PrizeListSerializer
 
+
+@extend_schema_view(
+    get=extend_schema(
+        summary='Список призов топ 3 игроков',
+        description='Возвращает список призов для топ 3 игроков. Для запроса ничего передавать не надо',
+    )
+)
 class PrizeTop3List(generics.ListAPIView):
     ''' Список призов топ 3 игроков '''
 
@@ -571,6 +590,12 @@ class PrizeTop3List(generics.ListAPIView):
     serializer_class = PrizeTop3ListSerializer
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary='Информация о супер призе',
+        description='Возвращает супер приз. Для запроса ничего передавать не надо',
+    )
+)
 class SuperPrizeView(generics.ListAPIView):
     ''' Информация о супер призе '''
 
