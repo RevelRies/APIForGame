@@ -126,7 +126,6 @@ class User(AbstractUser):
     deaths = models.IntegerField(default=0, verbose_name='количества смертей')
     obstacle_collisions = models.IntegerField(default=0, verbose_name='количества столкновений')
     selected_character = models.CharField(default='DefaultCharacter', max_length=250, verbose_name='выбранный персонаж')
-    rank = models.ForeignKey(to=Rank, on_delete=models.CASCADE, blank=True, null=True, verbose_name='ранг')
 
     # поле в котором хранится действительный refresh token
     refresh_token = models.CharField(default='None', max_length=500, verbose_name='действительный refresh token')
@@ -206,6 +205,8 @@ class UserSeasonScore(models.Model):
     user = models.ForeignKey(to=User, on_delete=models.CASCADE, related_name='user_score')
     season = models.ForeignKey(to=Season, on_delete=models.CASCADE, related_name='season_score')
     season_high_score = models.IntegerField(default=0, verbose_name='сумма очков пользователя в сезоне')
+    prize_received = models.BooleanField(default=False, verbose_name='приз получен')
+    rank = models.ForeignKey(to=Rank, on_delete=models.CASCADE, blank=True, null=True, verbose_name='ранг')
 
     class Meta:
         verbose_name = 'Результат за сезон'

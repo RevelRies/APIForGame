@@ -76,8 +76,9 @@ def editing_ranks():
         for _ in range(quantity_users_in_ranks[rank_number - 1]):
             try:
                 uss = next(uss_iterator)
-                uss.user.rank = rank
-                uss.user.save()
+                uss.rank = rank
+                print(f"{uss.user.username} - {uss.rank}")
+                uss.save()
             except:
                 pass
 
@@ -85,9 +86,9 @@ def editing_ranks():
     while 1:
         try:
             uss = next(uss_iterator)
-            uss.user.rank = None
-            print(f"{uss.user.username} - {uss.user.rank}")
-            uss.user.save()
+            uss.rank = None
+            print(f"{uss.user.username} - {uss.rank}")
+            uss.save()
         except:
             break
 

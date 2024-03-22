@@ -602,3 +602,30 @@ class SuperPrizeView(generics.ListAPIView):
     current_season = Season.objects.get(is_active=True)
     queryset = SuperPrize.objects.filter(season=current_season)
     serializer_class = SuperPrizeViewSerializer
+
+
+class GetPrize(APIView):
+    ''' Получения приза для пользователя '''
+
+    def put(self, request: Request):
+        current_season_number = Season.objects.get(is_active=True).number
+        prev_season_number = Season.objects.get(number=current_season_number)
+
+        try:
+            # получаем данные
+            email = request.data['email']
+            season_number = request.data.get('season_number', prev_season_number)
+            user = User.objects.get(email=email)
+            season = Season.objects.get(number=season_number)
+
+            # определяем место пользователя в сезоне
+            user_position = get_user_position(user, season)
+            # если пользователь входит в топ 3
+            if user_position <= 3:
+                prize = PrizeTop3.objects.get(top_number=user_position, season=season)
+            else:
+                rank = UserSeasonScore.objects.get(user=user, season=season).rank
+                prize = Prize.objects.get(season=season, rank=rank)
+
+        except Exception as ex:
+            return Response({"error": f"{ex}"}, status=status.HTTP_400_BAD_REQUEST)

@@ -39,10 +39,12 @@ class UserDataSerializer(ModelSerializer):
         return user_season_score.season_high_score
 
     def get_rank_number(self, user):
+        current_season = Season.objects.get(is_active=True)
+        user_season_score = UserSeasonScore.objects.get(user=user, season=current_season)
         try:
-            return user.rank.number
+            return user_season_score.rank.number
         except:
-            return user.rank
+            return user_season_score.rank
 
 
 class SaveUserDataSerializer(ModelSerializer):
