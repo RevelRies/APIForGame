@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from game.models import Season
+from game.models import Season, UserSeasonScore, User
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -20,7 +20,8 @@ class Command(BaseCommand):
         # Если конец сезона сегодня, то проверяем законфигурирован ли следующий сезон
         if prev_season.finish_date.day == current_day:
             # Если следующий сезон не законфигурирован, то создаем новый и делаем его активным
-            if Season.objects.get(is_active=True) == Season.objects.all().last():
+            current_season = Season.objects.get(is_active=True)
+            if current_season == Season.objects.all().last():
                 number = prev_season.number + 1
                 name = f"season_{number}"
                 # берем текущее время (23:59), прибавляем к нему час, заменяем часы и минуты на нули
@@ -38,6 +39,14 @@ class Command(BaseCommand):
                 next_season = Season.objects.get(number=prev_season.number + 1)
                 next_season.is_active = True
                 next_season.save()
+
+            # берем первого пользователя в конце сезона и помечаем что он имеет супер приз
+            top1_user_season_score = (UserSeasonScore.objects.
+                                      filter(season=current_season).
+                                      order_by('-season_high_score').
+                                      first())
+            top1_user_season_score.has_super_prize = True
+            top1_user_season_score.save()
 
             prev_season.is_active = False
             prev_season.save()

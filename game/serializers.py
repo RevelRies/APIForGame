@@ -163,6 +163,24 @@ class RanksListSerializer(ModelSerializer):
         exclude = ['id']
 
 
+class PrizeSerializer(ModelSerializer):
+    class Meta:
+        model = Prize
+        fields = ['coins', 'characters', 'boosters']
+
+
+class PrizeTop3Serializer(ModelSerializer):
+    class Meta:
+        model = PrizeTop3
+        fields = ['top_number', 'coins', 'characters', 'boosters']
+
+
+class SuperPrizeSerializer(ModelSerializer):
+    class Meta:
+        model = SuperPrize
+        fields = ['name', 'image_preview', 'image_gift', 'description', 'burns_down_date']
+
+
 class PrizeListSerializer(ModelSerializer):
     season_number = serializers.IntegerField(read_only=True, source='season.number')
     rank_number = serializers.IntegerField(read_only=True, source='rank.number')
@@ -185,3 +203,10 @@ class SuperPrizeViewSerializer(ModelSerializer):
     class Meta:
         model = SuperPrize
         fields = ['season_number', 'name', 'image_preview', 'image_gift', 'description', 'burns_down_date']
+
+
+class GetSuperPrizeSerializer(ModelSerializer):
+    class Meta:
+        model = SuperPrize
+        fields = ['image_gift']
+        extra_kwargs = {'image_gift': {'required': False}}

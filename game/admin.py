@@ -27,6 +27,8 @@ class UserAdmin(admin.ModelAdmin):
 class UserSeasonScoreAdmin(admin.ModelAdmin):
     # результаты будут сортироваться по номеру сезона и username
     ordering = ['-season__number', 'user__username']
+    # поля только для чтения
+    readonly_fields = ['prize_received', 'has_super_prize', 'super_prize_received']
 
 
 class PrizesInline(admin.StackedInline):

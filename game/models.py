@@ -206,6 +206,8 @@ class UserSeasonScore(models.Model):
     season = models.ForeignKey(to=Season, on_delete=models.CASCADE, related_name='season_score')
     season_high_score = models.IntegerField(default=0, verbose_name='сумма очков пользователя в сезоне')
     prize_received = models.BooleanField(default=False, verbose_name='приз получен')
+    has_super_prize = models.BooleanField(default=False, verbose_name='супер приз имеется')
+    super_prize_received = models.BooleanField(default=False, verbose_name='супер приз получен')
     rank = models.ForeignKey(to=Rank, on_delete=models.CASCADE, blank=True, null=True, verbose_name='ранг')
 
     class Meta:

@@ -13,7 +13,11 @@ from .serializers import (UserDataSerializer,
                           RanksListSerializer,
                           PrizeListSerializer,
                           PrizeTop3ListSerializer,
-                          SuperPrizeViewSerializer)
+                          SuperPrizeViewSerializer,
+                          GetSuperPrizeSerializer,
+                          PrizeSerializer,
+                          PrizeTop3Serializer,
+                          SuperPrizeSerializer)
 
 from drf_spectacular.utils import (extend_schema,
                                    extend_schema_view,
@@ -86,7 +90,7 @@ class SaveUserDataView(APIView):
     '''
 
     # указывает что запрос могут сделать только авторизованные пользователи
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
     @extend_schema(
         request=inline_serializer(
@@ -166,7 +170,7 @@ class UserLeaderboardAllSeasonPosition(APIView):
 
         # пробуем найти пользователя с таким email
         try:
-            instance = User.objects.get(email=email)
+            user = User.objects.get(email=email)
         except:
             return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -175,15 +179,38 @@ class UserLeaderboardAllSeasonPosition(APIView):
         result_data = dict()
         for season in Season.objects.order_by("number"):
             try:
+                user_season_score = UserSeasonScore.objects.get(season=season, user=user)
+                user_position = get_user_position(user, season)
+                prize = None
+                super_prize = None
+
+                # получаем данные приза, если пользователь его еще не получил
+                if user_position <= 3 and not user_season_score.prize_received:
+                    prize = PrizeTop3.objects.get(top_number=user_position, season=season)
+                    prize = PrizeTop3Serializer(prize).data
+                elif user_position > 3 and not user_season_score.prize_received:
+                    rank = user_season_score.rank
+                    prize = Prize.objects.get(season=season, rank=rank)
+                    prize = PrizeSerializer(prize).data
+
+                # если у пользователя имеется супер приз, то выводим данные супер приза
+                if user_position == 1:
+                    if not user_season_score.super_prize_received:
+                        super_prize = SuperPrizeSerializer(instance=SuperPrize.objects.get(season=season)).data
+
                 result_data.update(
                     {f"season_{season.number}": {
                         "season_name": season.name,
                         "season_number": season.number,
-                        "user_position": get_user_position(user=instance, season=season)
+                        "user_position": get_user_position(user=user, season=season),
+                        "user_rank_number": user_season_score.rank.number,
+                        "prize": prize,
+                        "has_super_prize": user_season_score.has_super_prize,
+                        "super_prize": super_prize,
                     }}
                 )
-            except:
-                continue
+            except Exception as ex:
+                return Response({"error": f"{ex}"}, status=status.HTTP_400_BAD_REQUEST)
         return Response(result_data, status=status.HTTP_200_OK)
 
 
@@ -264,23 +291,19 @@ class UserLeaderboardCurrentSeasonPosition(generics.ListAPIView):
                 type=int,
             ),
             OpenApiParameter(
-                name="top_size",
-                description=("Количество топ игроков"),
+                name="rank_size",
+                description=("Количество пользователей в ранге"),
                 default=5,
                 type=int,
             )
         ],
-        summary='Топ игроков сезона',
-        description='Если не передавать параметры, то по умолчанию выбирается текущий сезон и топ 5 игроков',
+        summary='Топ игроков сезона по рангам',
+        description='Если не передавать параметры, то по умолчанию выбирается текущий сезон и по 5 игроков каждого '
+                    'ранга.',
     )
 )
 class SeasonTopLeaderboard(generics.ListAPIView):
-    '''
-    Получаем лидерборд сезона. Тело запроса:\n
-    {\n
-    "season_number": 3,\n
-    }\n
-    '''
+    ''' Получаем лидерборд сезона. '''
 
     serializer_class = SeasonTopLeaderboardSerializer
 
@@ -289,13 +312,12 @@ class SeasonTopLeaderboard(generics.ListAPIView):
         Переопределяю метод для проверки тела запроса и вывода топа игроков для текущего сезона
         '''
 
-        # получаем номер сезона из параметров запроса
-        season_number = self.request.GET.get('season_number', None)
-        if not season_number:
-            season_number = Season.objects.get(is_active=True).number
+        # получаем номер сезона из параметров запроса либо берем первый сезон
+        current_season_number = Season.objects.get(is_active=True).number
+        season_number = self.request.GET.get('season_number', current_season_number)
 
-        # получаем количество топа игроков которых нужно вывести
-        top_size = int(self.request.GET.get('top_size', 5))
+        # получаем количество игроков в ранге которых нужно вывести
+        rank_size = int(self.request.GET.get('rank_size', 5))
 
         # пробуем найти сезон с таким номером
         try:
@@ -303,7 +325,20 @@ class SeasonTopLeaderboard(generics.ListAPIView):
         except:
             return Response({"error": "Object does not exists"}, status=status.HTTP_400_BAD_REQUEST)
 
-        return UserSeasonScore.objects.filter(season=season).order_by('-season_high_score')[:top_size]
+        # список QuerySet-ов игроков
+        result_qs = []
+
+        # берем каждый ранг
+        for rank in Rank.objects.all():
+                # для каждого ранга находим user_season_scores и выбираем из них нужное количество
+                user_season_scores = UserSeasonScore.objects.filter(season=season, rank=rank).order_by('-season_high_score')
+                for indx in range(rank_size):
+                    try:
+                        result_qs.append(user_season_scores[indx])
+                    except:
+                        break
+
+        return result_qs
 
 
 @extend_schema_view(
@@ -605,11 +640,28 @@ class SuperPrizeView(generics.ListAPIView):
 
 
 class GetPrize(APIView):
-    ''' Получения приза для пользователя '''
+    ''' Получение приза для пользователя '''
 
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(
+        request=inline_serializer(
+            name="GetPrizeDocSerializer",
+            fields={
+                "email": serializers.CharField(default='testemail_01@mail.ru'),
+                "season_number": serializers.IntegerField(default=1),
+            },
+        ),
+        summary='Начисление наград за сезон',
+        description='Вызов метода начисляет пользователю награды за сезон, если в теле запроса не передавать номер'
+                    'сезона, то награда будет зачислена за прошедший сезон',
+    )
     def put(self, request: Request):
         current_season_number = Season.objects.get(is_active=True).number
-        prev_season_number = Season.objects.get(number=current_season_number)
+        if current_season_number != 1:
+            prev_season_number = Season.objects.get(number=current_season_number - 1).number
+        else:
+            prev_season_number = 1
 
         try:
             # получаем данные
@@ -617,6 +669,8 @@ class GetPrize(APIView):
             season_number = request.data.get('season_number', prev_season_number)
             user = User.objects.get(email=email)
             season = Season.objects.get(number=season_number)
+            print(season.number)
+            user_season_score = UserSeasonScore.objects.get(user=user, season=season)
 
             # определяем место пользователя в сезоне
             user_position = get_user_position(user, season)
@@ -624,8 +678,82 @@ class GetPrize(APIView):
             if user_position <= 3:
                 prize = PrizeTop3.objects.get(top_number=user_position, season=season)
             else:
-                rank = UserSeasonScore.objects.get(user=user, season=season).rank
+                rank = user_season_score.rank
                 prize = Prize.objects.get(season=season, rank=rank)
+
+            # начисляем монеты
+            user.coins += prize.coins
+            # начисляем бустеры
+            for booster_string_id, value in dict.items(prize.boosters):
+                user.boosters[booster_string_id] += value
+
+            # начисляем персонажей
+            for character in prize.characters:
+                if character not in user.unlocked_characters:
+                    user.unlocked_characters.append(character)
+
+            # ставим метку, что пользователь получил приз
+            user_season_score.prize_received = True
+
+            # сохраняем новые данные у пользователя и user_season_score
+            user.save()
+            user_season_score.save()
+
+            serializer = UserDataSerializer(instance=user, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as ex:
+            return Response({"error": f"{ex}"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class GetSuperPrize(APIView):
+    ''' Получение супер приза '''
+
+    permission_classes = (IsAuthenticated,)
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="email",
+                description=("email пользователя"),
+                default="testemail_01@mail.ru",
+                type=str,
+            ),
+            OpenApiParameter(
+                name="season_number",
+                description=("Номер сезона"),
+                default=1,
+                type=int,
+            ),
+        ],
+        summary='Получение супер приза',
+        description='Возвращает картинку супер приза, если не передавать номер сезона, то будет выбран прошедший сезон',
+    )
+    def get(self, request: Request):
+        try:
+            current_season_number = Season.objects.get(is_active=True).number
+            if current_season_number != 1:
+                prev_season_number = Season.objects.get(number=current_season_number - 1).number
+            else:
+                prev_season_number = 1
+
+            email = self.request.GET.get('email', None)
+            season_number = self.request.GET.get('season_number', prev_season_number)
+            user = User.objects.get(email=email)
+            season = Season.objects.get(number=season_number)
+            user_season_score = UserSeasonScore.objects.get(user=user, season=season)
+            super_prize = SuperPrize.objects.get(season=season)
+
+            serializer = GetSuperPrizeSerializer(instance=super_prize, data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                user_season_score.super_prize_received = True
+                user_season_score.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as ex:
             return Response({"error": f"{ex}"}, status=status.HTTP_400_BAD_REQUEST)

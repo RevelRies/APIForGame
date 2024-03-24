@@ -14,7 +14,9 @@ from .views import (UserDataView,
                     RanksList,
                     PrizeList,
                     PrizeTop3List,
-                    SuperPrizeView)
+                    SuperPrizeView,
+                    GetPrize,
+                    GetSuperPrize)
 
 from django.urls import path
 from django.conf import settings
@@ -25,6 +27,8 @@ urlpatterns = [
     path('boosters_list/', BoostersList.as_view(), name='boosters_list'),
     path('character_list/', CharactersList.as_view(), name='character_list'),
     path('edit_boosters/', EditBooster.as_view(), name='edit_boosters'),
+    path('get_prize/', GetPrize.as_view(), name='edit_boosters'),
+    path('get_super_prize/', GetSuperPrize.as_view(), name='edit_boosters'),
     path('prizes/', PrizeList.as_view(), name='prizes'),
     path('prizes_top_3/', PrizeTop3List.as_view(), name='prizes_top_3'),
     path('purchase/booster/', PurchaseBooster.as_view(), name='purchase_booster'),
