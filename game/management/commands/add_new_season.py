@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from game.models import Season, UserSeasonScore, User
+from game.models import Season, UserSeasonScore, User, Rank, Prize, PrizeTop3, SuperPrize
 
 from django.core.management.base import BaseCommand
 from django.utils import timezone
@@ -31,9 +31,35 @@ class Command(BaseCommand):
                 # прибавляем к текущему времени продолжительность предыдущего сезона
                 finish_date = ((timezone.localtime(timezone.now()) + timedelta(days=length_prev_season))).date()
     
-                # создаем новый сезон
-                Season.objects.create(name=name, number=number, start_date=start_date, finish_date=finish_date,
+                # создаем новый сезон и призы для нового сезона (копируются с предыдущего)
+                new_season = Season.objects.create(name=name, number=number, start_date=start_date, finish_date=finish_date,
                                       is_active=True)
+
+                # призы по рангам
+                for rank in Rank.objects.all():
+                    prev_prize = Prize.objects.get(rank=rank, season=current_season)
+                    Prize.objects.create(rank=rank,
+                                         season=new_season,
+                                         coins=prev_prize.coins,
+                                         characters=prev_prize.characters,
+                                         boosters=prev_prize.boosters)
+                # призы для топ 3
+                for top_number in range(1, 4):
+                    prev_prize_top_3 = PrizeTop3.objects.get(top_number=top_number, season=current_season)
+                    PrizeTop3.objects.create(top_number=top_number,
+                                             season=new_season,
+                                             coins=prev_prize_top_3.coins,
+                                             characters=prev_prize_top_3.characters,
+                                             boosters=prev_prize_top_3.boosters)
+                # супер приз
+                prev_super_prize = SuperPrize.objects.get(season=current_season)
+                SuperPrize.objects.create(season=new_season,
+                                          name=prev_super_prize.name,
+                                          image_preview=prev_super_prize.image_preview,
+                                          image_gift=prev_super_prize.image_gift,
+                                          description=prev_super_prize.description,
+                                          burns_down_date=prev_super_prize.burns_down_date)
+
             # если новый сезон уже законфигурирован, то просто делаем его активным
             else:
                 next_season = Season.objects.get(number=prev_season.number + 1)
