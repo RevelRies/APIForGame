@@ -179,6 +179,15 @@ class UserLeaderboardAllSeasonPosition(APIView):
         result_data = dict()
         for season in Season.objects.order_by("number"):
             try:
+                # если пользователь не учавствовал в сезоне, добавляем об этом инфу и запускаем новый цикл
+                if not UserSeasonScore.objects.filter(season=season, user=user).exists():
+                    result_data.update(
+                        {f"season_{season.number}": {
+                            "result": "the user did not participate in the season"
+                        }}
+                    )
+                    continue
+
                 user_season_score = UserSeasonScore.objects.get(season=season, user=user)
                 user_position = get_user_position(user, season)
                 prize = None
@@ -355,7 +364,6 @@ class SeasonList(generics.ListAPIView):
 
     queryset = Season.objects.all().order_by('number')
     serializer_class = SeasonListSerializer
-    permission_classes = (IsAuthenticated,)
 
 
 class PurchaseBooster(APIView):
